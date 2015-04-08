@@ -25,7 +25,8 @@ class DependencyGraph {
   DependencyGraph(const DependencyGraph &other); // Copy constructor
   ~DependencyGraph();
 
- int size() const;
+ int size();
+ vector<string> GetDependents(string s);
   bool HasDependents(string s);
   bool HasDependees(string s);
   void AddDependency(string s, string t);
