@@ -12,6 +12,8 @@ class Spreadsheet
 {
  public:
   Spreadsheet();
+  Spreadsheet(char* filename);
+  char* filename;
 
 };
 

@@ -18,7 +18,9 @@
 #include <netinet/in.h>
 #include <map>
 #include <vector>
+#include <set>
 #include "Spreadsheet.h"
+#include "User.h"
 
 class SpreadsheetServer
 {
@@ -32,22 +34,24 @@ class SpreadsheetServer
    * When a connection is made, call ConnectionReceived 
    *  on a separate thread/process
    */
-  void Start();
+  void start();
 
 
-  // <Key, value> - <Filename, list of sockets associated>
-  //  std::map<std::string, std::vector<int> > Spreadsheets;
-  std::map<int, Spreadsheet> active_users;
+  // <Key, value>: <Socket, Spreadsheet>
+  std::map<int, Spreadsheet> active_spreadsheets;
 
+  std::vector<User> active_users;
 
   // Active spreadsheets
   // ? Load all spreadsheets up front or go to disk when needed
   // Con: have to constantly go through large vector
   //  use resources/memory unnecessarily
-  std::vector<Spreadsheet> SpreadsheetList;
+  std::vector<Spreadsheet> spreadsheetList;
 
   // Registered users
-  std::vector<std::string> UserList;
+  std::set<std::string> userList;
+
+  int port;
 
  private:
 
@@ -59,7 +63,7 @@ class SpreadsheetServer
    * Listen for commands
    *
    */
-  void ConnectionReceived(int client_socket);
+  void connectionReceived(int client_socket);
 
   /*
    * Check to see if the spreadsheet exists
@@ -82,7 +86,10 @@ class SpreadsheetServer
   // repeat this for the other commands
 
 
-  void CommandRecieved(int client_socket);
+  void commandReceived(int client_socket);
+
+  int server_socket;
+  struct sockaddr_in server_addr;
 
 };
 
