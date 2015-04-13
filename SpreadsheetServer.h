@@ -21,7 +21,7 @@
 #include <set>
 #include "Spreadsheet.h"
 #include "User.h"
-
+#include <boost/thread.hpp>
 
 class SpreadsheetServer
 {

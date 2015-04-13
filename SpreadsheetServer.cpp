@@ -1,5 +1,6 @@
 #include "SpreadsheetServer.h"
 
+
 using namespace std;
 
 void dostuff(int);
@@ -172,7 +173,6 @@ void SpreadsheetServer::connectionReceived(int client_socket)
 
       openSpreadsheet(client_socket, file);
 
-
     }
 
   // First token is not connect
@@ -247,12 +247,36 @@ void SpreadsheetServer::commandReceived(int client_socket)
 	  n = write(client_socket, msg, l);
 	}
     }
-  else if (strcmp(command, "undo") == 0)
+  else if (tokens.size() == 1)//strcmp(command, "undo") == 0)
     {
-      if (tokens.size() != 1)
-	sendError(client_socket, 2, "Incorrect number of tokens");
-      //else
-	// Send the command to the spreadsheet to make changes
+      int len = strlen(tokens.at(0));
+      if (len != 6)
+      {
+	  sendError(client_socket, 2, "Incorrect number of tokens");
+      }
+      else
+	{
+	  char * undo = "undo";
+	  bool un = true;
+	  for (int i = 0; i < 4; i++)
+	    {
+	      if (command[i] != undo[i])
+		{
+		  un = false;
+		  break;
+		}
+	    }
+	  if (un)
+	    {
+	      // Send the command to the spreadsheet to make changes
+	      int l = sprintf(msg, "%s\n", command);
+
+	      // Form a indicator message, for debugging
+	      n = write(client_socket, msg, l);
+	    }
+	  else
+	    sendError(client_socket, 2, "Command not recognized");
+	}
     }
   else
     {
