@@ -21,7 +21,8 @@
 #include <set>
 #include "Spreadsheet.h"
 #include "User.h"
-#include <boost/thread.hpp>
+#include <algorithm>
+//#include <boost/thread.hpp>
 
 class SpreadsheetServer
 {
@@ -65,6 +66,8 @@ class SpreadsheetServer
    *
    */
   void connectionReceived(int client_socket);
+
+  std::string messageReceived(int client_socket);
 
   /*
    * Check to see if the spreadsheet exists

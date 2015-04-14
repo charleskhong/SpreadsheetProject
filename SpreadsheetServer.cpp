@@ -76,25 +76,9 @@ void SpreadsheetServer::start()
 	error("ERROR on accept");
 
       connectionReceived(client_socket);
-      // pid = fork();
-      /*      if (pid < 0)
-	error("ERROR on fork");
 
-      // Child process
-      else if (pid == 0)
-	{
-	  close(server_socket);
-	  connectionReceived(client_socket);
-	  //dostuff(client_socket);
-	  exit(0);
-	}
+      //messageReceived(client_socket);
 
-      // Main process
-      else
-	{
-	  close(client_socket);
-	}*/
-      //}
 
   close(server_socket);
 }
@@ -169,8 +153,10 @@ void SpreadsheetServer::connectionReceived(int client_socket)
       User newuser (user, client_socket);
       active_users.push_back(newuser);
 
-      n = write(client_socket, "I got your message\n", 20);
-
+      cout << tokens.at(0);
+      cout << " " << tokens.at(1) << " ";
+      for (int i = 0; i < strlen(tokens.at(2)); i++)
+	cout << "\\" << tokens.at(2)[i];
       openSpreadsheet(client_socket, file);
 
     }
@@ -325,6 +311,67 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
   // Start accepting commands
   commandReceived(client_socket);
   
+}
+
+std::string SpreadsheetServer::messageReceived(int client_socket)
+{
+  std::string line;
+  char buffer[1024];
+  int n = 0;
+  std::vector<std::string> tokens;
+
+  // Read all the commands
+  // If a newline is not at the end continue reading
+  // 
+  n = read(client_socket, buffer, 1024);
+  if (n > 0)
+    {
+      printf(buffer);
+      for (int i = 0; i < n; i++)
+	{
+	  char c = buffer[i];
+	  if (c == '\n')	    
+	      break;
+	  else
+	    line.append(1, c);
+	}
+    }
+  cout << line << endl;
+  std::stringstream ss(line);
+  std::string token;
+  while (ss >> token)
+    tokens.push_back(token);
+  
+  std::string command (tokens.at(0));
+  if (command.compare("connect") == 0)
+    {
+      cout << "connect received" << endl;
+      // connect received
+    }
+  else if (command.compare("register") == 0)
+    {
+      cout << "register received" << endl;
+
+      // register received
+    }
+  else if (command.compare("cell") == 0)
+    {
+      cout << "cell received" << endl;
+
+      // cell command
+    }
+  else if (command.compare("undo") == 0)
+    {
+      cout << "undo received" << endl;
+
+      // undo command
+    }
+  else
+    {
+      // unrecognized command
+    }
+
+  messageReceived(client_socket);
 }
 
 void SpreadsheetServer::sendConnected(int client_socket, int numcells)
