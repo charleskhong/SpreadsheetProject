@@ -9,21 +9,24 @@
 #define SPREADSHEET_H
 
 #include "DependencyGraph.h"
-#include <string>
+#include <string.h>
 #include <map>
 #include <vector>
 #include <set>
+#include <iostream>
+#include <fstream>
+
 
 class Spreadsheet
 {
  public:
   Spreadsheet();
-  Spreadsheet(char* filename);
+  Spreadsheet(const char* fname);
  
   std::set<std::string> setCell(std::string name, std::string contents);
 
 
-  char* filename;
+  const char* filename;
   std::vector<int> sockets;
   // Cell name, cell contents
   std::map<std::string, std::string> cells;

@@ -7,8 +7,10 @@
 
 
 #include "Spreadsheet.h"
-#include <fstream>
-#include <set>
+
+
+
+using namespace std;
 
 Spreadsheet::Spreadsheet()
 {
@@ -18,39 +20,67 @@ Spreadsheet::Spreadsheet()
 * Reads from file provided. Loads the given spreadsheet if it exists. 
 * If not, makes a new one.
 */
-Spreadsheet::Spreadsheet(char* filename)
+Spreadsheet::Spreadsheet(const char* fname)
 {
-  /*
   string line;
   ifstream sprdfile (filename);
-  
+  filename = fname;
   std::string cellname, contents;
-
+  
 
   if (sprdfile.is_open())
     {
-      while ( getline (sprdfile,line) )
+      while (getline (sprdfile,line) )
 	{
-	  // <cellname> <contents> \n
-	  std::vector<char*> words;
-	  char* chars_array = strtok(filename, " ");
-	  while(chars_array!=NULL)
-	    {
-	      words.push_back(chars_array);
-	      chars_array = strtok(NULL, " ");
-	    }
-      
-	  cellname(words.at(0));
-	  contents(words.at(1));
-	  cells.insert ( std::pair<std::string,std::string>(cellname, contents));
+	  // <cellname> <contents>\n
+	  stringstream ss(line);
+	  
+	  ss>>cellname;
+	  string c;
+	 
+	  while(ss>>c)
+	    contents= contents+c+" ";
+	  
+	  contents = contents.substr(0, contents.size()-1);
+
+	  
 	}
       sprdfile.close();
     }
 
   else
-    cout << "Unable to open file"; 
-  */
+    {
+      cout << "Unable to open file"; 
+      
+      
+    }
 }
+
+std::set<std::string> Spreadsheet::setCell(std::string name, std::string contents)
+{
+
+  if(contents.substr(0,1).compare("=")==1)	    
+    {
+      stringstream ss(contents);
+      string token;
+
+      while(getline(ss, token, "+-*/")
+	{
+	  token.
+	}
+      
+      
+      contents
+
+    }
+
+      
+  cells.insert ( std::pair<std::string,std::string>(cellname, contents));
+
+
+}
+
+
 
 std::set<std::string> Spreadsheet::getCellsToRecalculate(std::set<std::string> names)
 {
