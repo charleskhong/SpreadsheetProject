@@ -7,7 +7,8 @@
 
 
 #include "Spreadsheet.h"
-#include<fstream>
+#include <fstream>
+#include <set>
 
 Spreadsheet::Spreadsheet()
 {
@@ -19,6 +20,7 @@ Spreadsheet::Spreadsheet()
 */
 Spreadsheet::Spreadsheet(char* filename)
 {
+  /*
   string line;
   ifstream sprdfile (filename);
   
@@ -40,26 +42,52 @@ Spreadsheet::Spreadsheet(char* filename)
       
 	  cellname(words.at(0));
 	  contents(words.at(1));
-	  cells.insert ( std::pair<std::string,std::string>(cellname, contents) );
+	  cells.insert ( std::pair<std::string,std::string>(cellname, contents));
 	}
       sprdfile.close();
     }
 
-  else cout << "Unable to open file"; 
+  else
+    cout << "Unable to open file"; 
+  */
 }
 
-Spreadsheet::getCellsToRecalculate(std::set<std::string> names)
+std::set<std::string> Spreadsheet::getCellsToRecalculate(std::set<std::string> names)
 {
+  
+  std::set<std::string> visited;
+  std::vector<std::string> changed;
+  for(std::set<std::string>::iterator it = names.begin(); it != names.end(); ++it) { 
+    const bool vis = visited.find(*it) != visited.end();
+     if(vis){
+       visit(*it, *it, visited, changed);
+     }
+  }
+  
 }
 
-Spreadsheet::getCellsToRecalculate(std::string names)
+std::set<std::string> Spreadsheet::getCellsToRecalculate(std::string name)
 {
-
+  std::set<std::string> s;
+  s.insert(name);
+  return getCellsToRecalculate(s); 
 }
 
-Spreadsheet::visit(std::string start,  std::string name, std::set<std::string> visited, std::vector<std::string> changed)
+void Spreadsheet::visit(std::string start,  std::string name, std::set<std::string> visited, std::vector<std::string> changed)
 {
+  visited.insert(name);
+  std::vector<std::string> d  = graph.GetDependents(name);
+  for(std::vector<std::string>::iterator it = d.begin(); it != d.end(); ++it) {
+    const bool vis = visited.find(*it) != visited.end();
+    if(*it == start){
+      //Exception Circular
 
+    } else if(!vis){
+      visit(start, *it, visited, changed);
+    }
+  }
+
+  changed.insert(changed.begin(), name);
 }
 
 

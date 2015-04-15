@@ -1,3 +1,4 @@
+
 /*
  * Filename:Dependency.c
  * Author:Ty-Rack-US Park
@@ -10,6 +11,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <set>
 #include <algorithm>
 
 using namespace std;
@@ -24,6 +26,7 @@ int DependencyGraph::size(){
 }
 
 DependencyGraph::DependencyGraph(const DependencyGraph &other){
+
 }
 
 DependencyGraph::~DependencyGraph(){
@@ -48,7 +51,7 @@ vector<string> DependencyGraph::GetDependents(string s){
     vector<string> items = key_to_dependents[s];
     return items;
   } else {
-    vector <string> item;
+    vector<string> item;
     return item;
   }
 }

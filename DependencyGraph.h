@@ -11,8 +11,8 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <set>
 
-using namespace std;
 
 /*
  * This class represents a data structure for representing different
@@ -26,21 +26,20 @@ class DependencyGraph {
   ~DependencyGraph();
 
  int size();
- vector<string> GetDependents(string s);
-  bool HasDependents(string s);
-  bool HasDependees(string s);
-  void AddDependency(string s, string t);
-  void RemoveDependency(string s, string t);
-  void ReplaceDependents(string s, vector<string> newDependents);
-  void ReplaceDependees(string s, vector<string> newDependees);
+ std::vector<std::string> GetDependents(std::string s);
+ bool HasDependents(std::string s);
+ bool HasDependees(std::string s);
+ void AddDependency(std::string s, std::string t);
+ void RemoveDependency(std::string s, std::string t);
+ void ReplaceDependents(std::string s, std::vector<std::string> newDependents);
+ void ReplaceDependees(std::string s, std::vector<std::string> newDependees);
 
  private:
   int PairCount;
-  map<string, vector<string> > key_to_dependents;
-  map<string, vector<string> > key_to_dependees;
+  std::map<std::string, std::vector<std::string> > key_to_dependents;
+  std::map<std::string, std::vector<std::string> > key_to_dependees;
   
 };
-
 
  #endif
 
