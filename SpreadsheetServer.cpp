@@ -49,7 +49,7 @@ SpreadsheetServer::SpreadsheetServer(int port)
   if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
     error("ERROR on binding");
 
-  userList.insert("sysadmin");
+  registered_users.insert("sysadmin");
 
   cout << "Server initialized" << endl;
 }
@@ -125,38 +125,14 @@ void SpreadsheetServer::connectionReceived(int client_socket)
       file = tokens.at(2);
 
       // Username is not registered
-      if (userList.find(user) == userList.end())
+      if (registered_users.find(user) == registered_users.end())
 	{
 	  sendError(client_socket, 4, "Username is not registered or is taken");
 	  connectionReceived(client_socket);
 	    
 	}
 
-      // Username is registered
-      if (userList.find(user) != userList.end())
-	{
-	  // Loop through active_users
-	  for (int i = 0; i < active_users.size(); i++)
-	    {
-	      char* name = active_users.at(i).username; 
-
-	      // Username is taken
-	      if (strcmp(name, user) == 0)
-		{
-		  sendError(client_socket, 4, "Username is not registered or is taken");
-		  connectionReceived(client_socket);
-		}
-	    }
-	}
-
       cout << "Username was not taken" << endl;
-      User newuser (user, client_socket);
-      active_users.push_back(newuser);
-
-      cout << tokens.at(0);
-      cout << " " << tokens.at(1) << " ";
-      for (int i = 0; i < strlen(tokens.at(2)); i++)
-	cout << "\\" << tokens.at(2)[i];
       openSpreadsheet(client_socket, file);
 
     }
@@ -209,7 +185,7 @@ void SpreadsheetServer::commandReceived(int client_socket)
 	  char* name = tokens.at(1);
 
 	  // ? Do we need to send an error if the username is already registered ?
-	  userList.insert(name);
+	  registered_users.insert(name);
 	  
 	  int l = sprintf(msg, "%s %s\n", command, name);
 
@@ -277,28 +253,57 @@ void SpreadsheetServer::commandReceived(int client_socket)
 
 }
 
+/**
+ *
+ *
+ */
 void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
 {
-  const  char* file = filename.c_str();
+  const char* file = filename.c_str();
+  // Check to see if the filename is valid
   bool exists = false;
   int numcells = 8;
+  /// Spreadsheet s;
 
-  for (int i = 0; i < spreadsheetList.size(); i++)
+  for (int i = 0; i < open_spreadsheets.size(); i++)
     {
       // If the spreadsheet is in the list
-      if (strcmp(spreadsheetList.at(i).filename, file) == 0)
+      if (strcmp(open_spreadsheets.at(i).filename, file) == 0)
 	{
 	  exists = true;
+	  ///	  s = open_spreadsheets.at(i);
+	  // Spreadsheet make a function to return number of cells
+	  ///	  numcells = s.cells.size();
 	  break;
 	}
     }
 
+  // If the spreadsheet has not been opened before
   if (!exists)
     {
-      // Add spreadsheet to data structure
+      /***
+      // Load the spreadsheet if it exists on disk, otherwise this will return a new spreadsheet
+      s = Spreadsheet(file); 
+      // Make Spreadsheet use a const char* instead
+
+      // Spreadsheet is now an active spreadsheet
+      open_spreadsheets.push_back(file);
+
+      // Indicate the connection between socket and the spreadsheet
+      sprd_connections.insert(std::pair<int, Spreadsheet>(client_socket, s));
+      ***/
     }
 
   sendConnected(client_socket, numcells);
+
+  /***  // Send all non-empty cells and their contents to the client
+  for (map<string, string>::iterator it = s.cells.begin(); it != s.cells.end(); it++)
+    {
+      string cell = it->first;
+      string content = it->second;
+
+      sendCell(client_socket, cell, content);
+      } ***/
 
   // Send the cells
   sendCell(client_socket, "A1", "This");
@@ -313,7 +318,12 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
   
 }
 
-std::string SpreadsheetServer::messageReceived(int client_socket)
+/**
+ *
+ *
+ *
+ */
+void SpreadsheetServer::messageReceived(int client_socket)
 {
   std::string line;
   char buffer[1024];
@@ -336,6 +346,7 @@ std::string SpreadsheetServer::messageReceived(int client_socket)
 	    line.append(1, c);
 	}
     }
+  /*** look into using stringstream to delimit by ' ' rather than whitespace ***/
   cout << line << endl;
   std::stringstream ss(line);
   std::string token;
@@ -346,6 +357,7 @@ std::string SpreadsheetServer::messageReceived(int client_socket)
   if (command.compare("connect") == 0)
     {
       cout << "connect received" << endl;
+      connectReceived(client_socket, tokens);
       // connect received
     }
   else if (command.compare("register") == 0)
@@ -372,6 +384,37 @@ std::string SpreadsheetServer::messageReceived(int client_socket)
     }
 
   messageReceived(client_socket);
+}
+
+void SpreadsheetServer::connectReceived(int client_socket, std::vector<std::string> tokens)
+{
+  std::string user, filename;
+
+  if (tokens.size() != 3)
+    sendError(client_socket, 2, "Incorrect number of tokens");
+
+  user = tokens.at(1);
+  filename = tokens.at(2);
+
+  // Not registered
+  if (registered_users.find(user) == registered_users.end())
+      sendError(client_socket, 4, "Username is not registered or is taken");
+
+  openSpreadsheet(client_socket, filename);
+
+}
+
+void SpreadsheetServer::registerReceived(int client_socket, std::vector<std::string> tokens)
+{
+  std::string username;
+
+  if (tokens.size() != 2)
+    sendError(client_socket, 2, "Incorrect number of tokens");
+
+  username = tokens.at(1);
+
+
+
 }
 
 void SpreadsheetServer::sendConnected(int client_socket, int numcells)
