@@ -7,9 +7,11 @@
 
 
 #include "Spreadsheet.h"
+#include<boost/regex.hpp>
+#include<boost/algorithm/string.hpp>
 
 
-
+using namespace boost;
 using namespace std;
 
 Spreadsheet::Spreadsheet()
@@ -25,6 +27,7 @@ Spreadsheet::Spreadsheet(const char* fname)
   string line;
   ifstream sprdfile (filename);
   filename = fname;
+  circular = 11;
   std::string cellname, contents;
   
 
@@ -56,28 +59,73 @@ Spreadsheet::Spreadsheet(const char* fname)
     }
 }
 
-std::set<std::string> Spreadsheet::setCell(std::string name, std::string contents)
+bool Spreadsheet::setCell(std::string name, std::string contents)
 {
 
-  if(contents.substr(0,1).compare("=")==1)	    
-    {
-      stringstream ss(contents);
-      string token;
+regex e("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
 
-      while(getline(ss, token, "+-*/")
+ 
+if(contents.substr(0,1).compare("=")==0)	    
+    {
+      string content_formula = contents.substr(1);
+      string token;
+      vector<string> variables;
+      vector<string> temp;
+      vector<string> dependees_backup;
+      vector<string> dependents;
+
+      dependents.push_back(name);
+      dependees_backup = graph.GetDependees(name);
+      cmatch test;
+
+
+
+      string delim("+-/*");
+      boost::split(temp, content_formula, boost::is_any_of(delim));
+      
+      for(int i=0; i<temp.size(); i++)
 	{
-	  token.
+	  if(boost::regex_match(temp[i],test, e))
+	    {
+	      variables.push_back(temp[i]);
+	    }
+	}
+      graph.ReplaceDependees(name, variables);
+      
+      try
+	{
+	  set<string> cells = getCellsToRecalculate(name);
+	  
+	  for(set<string>::iterator it = cells.begin(); it!=cells.end(); it++)
+	    {
+	      dependents.push_back(*it);
+	    }
+	  
+	}
+      catch(int i)
+	{
+	  if(i==circular)
+	    {
+	      graph.ReplaceDependees(name, dependees_backup);
+	      return false;
+	    }
 	}
       
-      
-      contents
-
     }
+ if(contents.compare("")==0)
+   cells.erase(name);
+ else
+   {
+     std::pair<std::map<string,string>::iterator, bool> ret;
+     ret = cells.insert ( std::pair<std::string,std::string>(name, contents));
+     if(ret.second == false)
+       {
+	 cells.erase(name);
+	 cells.insert ( std::pair<std::string,std::string>(name, contents));
+       }
+   }
 
-      
-  cells.insert ( std::pair<std::string,std::string>(cellname, contents));
-
-
+ return true;
 }
 
 
@@ -110,6 +158,7 @@ void Spreadsheet::visit(std::string start,  std::string name, std::set<std::stri
   for(std::vector<std::string>::iterator it = d.begin(); it != d.end(); ++it) {
     const bool vis = visited.find(*it) != visited.end();
     if(*it == start){
+      throw circular;
       //Exception Circular
 
     } else if(!vis){

@@ -57,6 +57,18 @@ vector<string> DependencyGraph::GetDependents(string s){
 }
 
 
+vector<string> DependencyGraph::GetDependees(string t){
+  if(key_to_dependees.count(t) == 1) {
+    vector<string> items = key_to_dependees[t];
+    return items;
+  } else {
+    vector<string> item;
+    return item;
+  }
+}
+
+
+
 void DependencyGraph::AddDependency(string s, string t){
 
   if(key_to_dependents.count(s) == 1) { // This ensures only 1 unique is entered into the graph
@@ -71,7 +83,7 @@ void DependencyGraph::AddDependency(string s, string t){
   
  if(key_to_dependees.count(t) == 1) { // This ensures only 1 unique is entered into the graph
    if(find(key_to_dependees[t].begin(), key_to_dependees[t].end(), s) != key_to_dependees[t].end()){ // Only insert into the vector if it does not already exist
-      key_to_dependees[s].push_back(t);
+      key_to_dependees[t].push_back(s);
       PairCount++;
     }
   } else {

@@ -27,6 +27,7 @@ class DependencyGraph {
 
  int size();
  std::vector<std::string> GetDependents(std::string s);
+ std::vector<std::string> GetDependees(std::string s);
  bool HasDependents(std::string s);
  bool HasDependees(std::string s);
  void AddDependency(std::string s, std::string t);

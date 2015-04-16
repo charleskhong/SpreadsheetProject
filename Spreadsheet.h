@@ -23,7 +23,7 @@ class Spreadsheet
   Spreadsheet();
   Spreadsheet(const char* fname);
  
-  std::set<std::string> setCell(std::string name, std::string contents);
+  bool setCell(std::string name, std::string contents);
 
 
   const char* filename;
@@ -34,6 +34,7 @@ class Spreadsheet
 
  private:
   DependencyGraph graph;
+  int circular;
   void saveFile();
   std::set<std::string> getCellsToRecalculate(std::set<std::string> names);
   std::set<std::string> getCellsToRecalculate(std::string name);
