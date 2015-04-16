@@ -55,19 +55,12 @@ class SpreadsheetServer
 
  private:
 
-  /*
-   * Check to see if the user is valid and is registered
-   *  if not, send an error
-   * 
-   * OpenSpreadsheet
-   * Listen for commands
-   *
-   */
-  void connectionReceived(int client_socket);
 
   void messageReceived(int client_socket);
   void connectReceived(int client_socket, std::vector<std::string> tokens);
   void registerReceived(int client_socket, std::vector<std::string> tokens);
+  void cellReceived(int client_socket, std::vector<std::string> tokens);
+  void undoReceived(int client_socket, std::vector<std::string> tokens);
 
   /*
    * Check to see if the spreadsheet exists
@@ -88,9 +81,6 @@ class SpreadsheetServer
    */
   void sendCell(int client_socket, std::string cell_name, std::string contents);
   // repeat this for the other commands
-
-
-  void commandReceived(int client_socket);
 
   int server_socket;
   struct sockaddr_in server_addr;

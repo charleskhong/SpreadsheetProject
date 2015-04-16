@@ -75,182 +75,10 @@ void SpreadsheetServer::start()
       if (client_socket < 0)
 	error("ERROR on accept");
 
-      connectionReceived(client_socket);
-
-      //messageReceived(client_socket);
+      messageReceived(client_socket);
 
 
   close(server_socket);
-}
-
-void SpreadsheetServer::connectionReceived(int client_socket)
-{
-  int n;
-  char buffer[256];
-  char * token;
-  std::vector<char*> tokens;
-  char* command;
-  char* user;
-  char* file;
-
-  bzero(buffer, 256);
-  n = read(client_socket, buffer, 256);
-
-  if (n < 0)
-    error("ERROR reading from socket");
-
-  printf("Here is the command: %s\n", buffer);
-
-  // Split string by delimiter " "
-  token = strtok(buffer, " ");
-
-  // End of string will always return NULL
-  while (token != NULL)    
-    {
-      tokens.push_back(token);
-      token = strtok(NULL, " ");
-    }
-  command = tokens.at(0);  
-
-  if (strcmp(command, "connect") == 0)
-    {
-      // Incorrect number of tokens
-      if (tokens.size() != 3)
-	{
-	  sendError(client_socket, 2, "Incorrect number of tokens");
-	  connectionReceived(client_socket);
-	}
-    
-      user = tokens.at(1);
-      file = tokens.at(2);
-
-      // Username is not registered
-      if (registered_users.find(user) == registered_users.end())
-	{
-	  sendError(client_socket, 4, "Username is not registered or is taken");
-	  connectionReceived(client_socket);
-	    
-	}
-
-      cout << "Username was not taken" << endl;
-      openSpreadsheet(client_socket, file);
-
-    }
-
-  // First token is not connect
-  else if (strcmp(tokens.at(0), "connect") != 0)
-    {
-      sendError(client_socket, 2, "Expected connect command");
-      connectionReceived(client_socket);
-    }
-
-  // ? Close the connection at this point ?
-  if (n < 0)
-    error("ERROR writing to socket");
-   
-}
-
-void SpreadsheetServer::commandReceived(int client_socket)
-{
-  int n;
-  char buffer[256];
-  char msg[256];
-  char* token;
-  char* command;
-  std::vector<char*> tokens;
-
-  bzero(buffer, 256);
-  n = read(client_socket, buffer, 256);
-  printf("Here is the command: %s\n", buffer);
-
-  // Split string by delimiter " "
-  token = strtok(buffer, " ");
-
-  // End of string will always return NULL
-  while (token != NULL)    
-    {
-      tokens.push_back(token);
-      token = strtok(NULL, " ");
-    }
-
-  command = tokens.at(0);
-
-  if (strcmp(command, "register") == 0)
-    {
-      if (tokens.size() != 2)
-	sendError(client_socket, 2, "Incorrect number of tokens");
-
-      else
-	{
-	  char* name = tokens.at(1);
-
-	  // ? Do we need to send an error if the username is already registered ?
-	  registered_users.insert(name);
-	  
-	  int l = sprintf(msg, "%s %s\n", command, name);
-
-	  // Form a indicator message, for debugging
-	  n = write(client_socket, msg, l);
-	}
-    }
-  else if (strcmp(command, "cell") == 0)
-    {
-      if (tokens.size() != 3)
-	sendError(client_socket, 2, "Incorrect number of tokens");
-
-      else
-	{
-	  char* cell = tokens.at(1);
-	  char * contents = tokens.at(2);
-      
-	  int l = sprintf(msg, "%s %s %s\n", command, cell, contents);
-
-	  // Form a indicator message, for debugging
-	  n = write(client_socket, msg, l);
-	}
-    }
-  else if (tokens.size() == 1)//strcmp(command, "undo") == 0)
-    {
-      int len = strlen(tokens.at(0));
-      if (len != 6)
-      {
-	  sendError(client_socket, 2, "Incorrect number of tokens");
-      }
-      else
-	{
-	  char * undo = "undo";
-	  bool un = true;
-	  for (int i = 0; i < 4; i++)
-	    {
-	      if (command[i] != undo[i])
-		{
-		  un = false;
-		  break;
-		}
-	    }
-	  if (un)
-	    {
-	      // Send the command to the spreadsheet to make changes
-	      int l = sprintf(msg, "%s\n", command);
-
-	      // Form a indicator message, for debugging
-	      n = write(client_socket, msg, l);
-	    }
-	  else
-	    sendError(client_socket, 2, "Command not recognized");
-	}
-    }
-  else
-    {
-      sendError(client_socket, 2, "Command not recognized");
-    }
-
-  if (n < 0)
-    error("ERROR reading from socket");
-
-  // Continue listening for more commands
-  commandReceived(client_socket);
-
 }
 
 /**
@@ -312,10 +140,6 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
   sendCell(client_socket, "A4", "preloaded");
   sendCell(client_socket, "A5", "spreadsheet");
   sendCell(client_socket, "A6", "=3*3");
-
-  // Start accepting commands
-  commandReceived(client_socket);
-  
 }
 
 /**
@@ -363,23 +187,24 @@ void SpreadsheetServer::messageReceived(int client_socket)
   else if (command.compare("register") == 0)
     {
       cout << "register received" << endl;
-
+      registerReceived(client_socket, tokens);
       // register received
     }
   else if (command.compare("cell") == 0)
     {
       cout << "cell received" << endl;
-
+      cellReceived(client_socket, tokens);
       // cell command
     }
   else if (command.compare("undo") == 0)
     {
       cout << "undo received" << endl;
-
+      undoReceived(client_socket, tokens);
       // undo command
     }
   else
     {
+      sendError(client_socket, 2, "Invalid command");
       // unrecognized command
     }
 
@@ -391,16 +216,18 @@ void SpreadsheetServer::connectReceived(int client_socket, std::vector<std::stri
   std::string user, filename;
 
   if (tokens.size() != 3)
-    sendError(client_socket, 2, "Incorrect number of tokens");
-
+    {
+      sendError(client_socket, 2, "Incorrect number of tokens");
+      return;
+    }
   user = tokens.at(1);
   filename = tokens.at(2);
 
   // Not registered
   if (registered_users.find(user) == registered_users.end())
       sendError(client_socket, 4, "Username is not registered or is taken");
-
-  openSpreadsheet(client_socket, filename);
+  else
+    openSpreadsheet(client_socket, filename);
 
 }
 
@@ -408,13 +235,63 @@ void SpreadsheetServer::registerReceived(int client_socket, std::vector<std::str
 {
   std::string username;
 
-  if (tokens.size() != 2)
-    sendError(client_socket, 2, "Incorrect number of tokens");
+  if (tokens.size() == 1)
+    {
+      sendError(client_socket, 2, "Incorrect number of tokens");
+      return;
+    }
+  else if (tokens.size() > 2)
+    {
+      sendError(client_socket, 4, "Invalid username");
+      return;
+    }
 
   username = tokens.at(1);
 
+  // Register the user
+  // ret.second - true if newly inserted. false if already existed
+  std::pair<std::set<std::string>::iterator, bool> ret = registered_users.insert(username);
 
+  // User was already registered
+  if (ret.second == false)
+    sendError(client_socket, 4, "Username already registered");
 
+}
+
+void SpreadsheetServer::cellReceived(int client_socket, std::vector<std::string> tokens)
+{
+  std::string cell, contents;
+
+  if (tokens.size() != 3)
+    {
+      sendError(client_socket, 2, "Incorrect number of tokens");
+      return;
+    }
+  cell = tokens.at(1);
+  contents = tokens.at(2);
+  /*
+  Spreadsheet s = sprd_connections.find(client_socket)->second;
+  // sprd_connections[client_socket] gives second
+  s.setCell(cell, contents);
+  */
+
+  // For now echo the changes back to the client
+  sendCell(client_socket, cell, contents);
+
+}
+
+void SpreadsheetServer::undoReceived(int client_socket, std::vector<std::string> tokens)
+{
+  if (tokens.size() != 1)
+    {
+      sendError(client_socket, 2, "Incorrect number of tokens");
+      return;
+    }
+
+  /*
+  Spreadsheet s = sprd_connectiosn.find(client_socket)->second;
+  s.undo();
+  */
 }
 
 void SpreadsheetServer::sendConnected(int client_socket, int numcells)
