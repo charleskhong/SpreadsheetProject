@@ -40,18 +40,16 @@ class SpreadsheetServer
 
 
   // <Key, value>: <Socket, Spreadsheet>
-  std::map<int, Spreadsheet> active_spreadsheets;
-
-  std::vector<User> active_users;
+  std::map<int, Spreadsheet> sprd_connections;
 
   // Active spreadsheets
   // ? Load all spreadsheets up front or go to disk when needed
   // Con: have to constantly go through large vector
   //  use resources/memory unnecessarily
-  std::vector<Spreadsheet> spreadsheetList;
+  std::vector<Spreadsheet> open_spreadsheets;
 
   // Registered users
-  std::set<std::string> userList;
+  std::set<std::string> registered_users;
 
   int port;
 
@@ -67,7 +65,9 @@ class SpreadsheetServer
    */
   void connectionReceived(int client_socket);
 
-  std::string messageReceived(int client_socket);
+  void messageReceived(int client_socket);
+  void connectReceived(int client_socket, std::vector<std::string> tokens);
+  void registerReceived(int client_socket, std::vector<std::string> tokens);
 
   /*
    * Check to see if the spreadsheet exists
