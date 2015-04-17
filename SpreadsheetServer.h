@@ -23,6 +23,8 @@
 #include "User.h"
 #include <algorithm>
 //#include <boost/thread.hpp>
+#include <thread>
+#include <mutex>
 
 class SpreadsheetServer
 {
@@ -84,6 +86,7 @@ class SpreadsheetServer
 
   int server_socket;
   struct sockaddr_in server_addr;
+  std::mutex connections_lock, spreadsheets_lock, users_lock;
 
 };
 

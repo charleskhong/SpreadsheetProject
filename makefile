@@ -4,7 +4,7 @@
 # Description: Make for spreadsheet server
 
 all: server spreadsheet dependency user
-	g++ SpreadsheetServer.o Spreadsheet.o DependencyGraph.o User.o /usr/local/lib/libboost_system.a
+	g++ SpreadsheetServer.o Spreadsheet.o DependencyGraph.o User.o /usr/local/lib/libboost_system.a -std=c++0x -lpthread
 
 server: SpreadsheetServer.cpp SpreadsheetServer.h 
 	g++ -c SpreadsheetServer.cpp

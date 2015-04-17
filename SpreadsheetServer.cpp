@@ -46,7 +46,7 @@ SpreadsheetServer::SpreadsheetServer(int port)
   server_addr.sin_addr.s_addr = INADDR_ANY;
   server_addr.sin_port = htons(port);
 
-  if (bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
+  if (::bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
     error("ERROR on binding");
 
   registered_users.insert("sysadmin");
@@ -69,14 +69,16 @@ void SpreadsheetServer::start()
 
   cout << "Server listening" << endl;
 
-  //  while (1)
-  //{
+
+  while (1)
+    {
       client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_length);
       if (client_socket < 0)
 	error("ERROR on accept");
 
-      messageReceived(client_socket);
-
+      // Params: function, this object, function parameters
+      std::thread (&SpreadsheetServer::messageReceived, this, client_socket).detach();
+    }
 
   close(server_socket);
 }
@@ -93,6 +95,8 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
   int numcells = 8;
   /// Spreadsheet s;
 
+  spreadsheets_lock.lock();
+  int total_sheets = open_spreadsheets.size();
   for (int i = 0; i < open_spreadsheets.size(); i++)
     {
       // If the spreadsheet is in the list
@@ -105,6 +109,7 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
 	  break;
 	}
     }
+  spreadsheets_lock.unlock();
 
   // If the spreadsheet has not been opened before
   if (!exists)
@@ -115,10 +120,13 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
       // Make Spreadsheet use a const char* instead
 
       // Spreadsheet is now an active spreadsheet
+      spreadsheets_lock.lock();
       open_spreadsheets.push_back(file);
-
+      spreadsheets_lock.unlock();
       // Indicate the connection between socket and the spreadsheet
+      connections_lock.lock();
       sprd_connections.insert(std::pair<int, Spreadsheet>(client_socket, s));
+      connections_lock.unlock();
       ***/
     }
 
@@ -149,7 +157,7 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
  */
 void SpreadsheetServer::messageReceived(int client_socket)
 {
-  std::string line;
+  std::string line, next;
   char buffer[1024];
   int n = 0;
   std::vector<std::string> tokens;
@@ -170,13 +178,28 @@ void SpreadsheetServer::messageReceived(int client_socket)
 	    line.append(1, c);
 	}
     }
-  /*** look into using stringstream to delimit by ' ' rather than whitespace ***/
+  /*  while (n > 0)
+    {
+      printf(buffer);
+      for (int i = 0; i < n; i++)
+	{
+	  char c = buffer[i];
+	  if (c == '\n')
+	    break;
+	  else
+	    line.append(1,c);
+	}
+      n = read(client_socket, buffer, 1024);
+      }*/
   cout << line << endl;
   std::stringstream ss(line);
   std::string token;
   while (ss >> token)
     tokens.push_back(token);
   
+  // Delimits by space rather than whitespace
+  /*while (getline(ss, token, ' '))
+    tokens.push_back(token);*/
   std::string command (tokens.at(0));
   if (command.compare("connect") == 0)
     {
@@ -223,8 +246,13 @@ void SpreadsheetServer::connectReceived(int client_socket, std::vector<std::stri
   user = tokens.at(1);
   filename = tokens.at(2);
 
+  bool registered = false;
+  users_lock.lock();
+  registered = registered_users.find(user) != registered_users.end();
+  users_lock.unlock();
+
   // Not registered
-  if (registered_users.find(user) == registered_users.end())
+  if (!registered)
       sendError(client_socket, 4, "Username is not registered or is taken");
   else
     openSpreadsheet(client_socket, filename);
@@ -250,7 +278,9 @@ void SpreadsheetServer::registerReceived(int client_socket, std::vector<std::str
 
   // Register the user
   // ret.second - true if newly inserted. false if already existed
+  users_lock.lock();
   std::pair<std::set<std::string>::iterator, bool> ret = registered_users.insert(username);
+  users_lock.unlock();
 
   // User was already registered
   if (ret.second == false)
@@ -270,7 +300,9 @@ void SpreadsheetServer::cellReceived(int client_socket, std::vector<std::string>
   cell = tokens.at(1);
   contents = tokens.at(2);
   /*
+  connections_lock.lock();
   Spreadsheet s = sprd_connections.find(client_socket)->second;
+  connections.lock.unlock();
   // sprd_connections[client_socket] gives second
   s.setCell(cell, contents);
   */
@@ -289,7 +321,9 @@ void SpreadsheetServer::undoReceived(int client_socket, std::vector<std::string>
     }
 
   /*
-  Spreadsheet s = sprd_connectiosn.find(client_socket)->second;
+  connections_lock.lock();
+  Spreadsheet s = sprd_connections.find(client_socket)->second;
+  connections_lock.unlock();
   s.undo();
   */
 }
