@@ -39,7 +39,7 @@ class Spreadsheet
   int circular;
   std::set<std::string> getCellsToRecalculate(std::set<std::string> names);
   std::set<std::string> getCellsToRecalculate(std::string name);
-  void visit(std::string start, std::string name, std::set<std::string> visited,  std::vector<std::string> changed);
+  void visit(std::string start, std::string name, std::set<std::string> visited,  std::set<std::string> changed);
   
   };
 

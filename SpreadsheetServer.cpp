@@ -93,7 +93,7 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
   // Check to see if the filename is valid
   bool exists = false;
   int numcells = 8;
-  /// Spreadsheet s;
+  Spreadsheet s;
 
   spreadsheets_lock.lock();
   int total_sheets = open_spreadsheets.size();
@@ -103,9 +103,9 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
       if (strcmp(open_spreadsheets.at(i).filename, file) == 0)
 	{
 	  exists = true;
-	  ///	  s = open_spreadsheets.at(i);
+	  	  s = open_spreadsheets.at(i);
 	  // Spreadsheet make a function to return number of cells
-	  ///	  numcells = s.cells.size();
+	  	  numcells = s.cells.size();
 	  break;
 	}
     }
@@ -114,40 +114,41 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
   // If the spreadsheet has not been opened before
   if (!exists)
     {
-      /***
+      
       // Load the spreadsheet if it exists on disk, otherwise this will return a new spreadsheet
       s = Spreadsheet(file); 
+      numcells = s.cells.size();
       // Make Spreadsheet use a const char* instead
 
       // Spreadsheet is now an active spreadsheet
       spreadsheets_lock.lock();
-      open_spreadsheets.push_back(file);
+      open_spreadsheets.push_back(s);
       spreadsheets_lock.unlock();
       // Indicate the connection between socket and the spreadsheet
       connections_lock.lock();
       sprd_connections.insert(std::pair<int, Spreadsheet>(client_socket, s));
       connections_lock.unlock();
-      ***/
+      
     }
 
   sendConnected(client_socket, numcells);
 
-  /***  // Send all non-empty cells and their contents to the client
+   // Send all non-empty cells and their contents to the client
   for (map<string, string>::iterator it = s.cells.begin(); it != s.cells.end(); it++)
     {
       string cell = it->first;
       string content = it->second;
 
       sendCell(client_socket, cell, content);
-      } ***/
+      } 
 
   // Send the cells
-  sendCell(client_socket, "A1", "This");
+  /**sendCell(client_socket, "A1", "This");
   sendCell(client_socket, "A2", "is");
   sendCell(client_socket, "A3", "a");
   sendCell(client_socket, "A4", "preloaded");
   sendCell(client_socket, "A5", "spreadsheet");
-  sendCell(client_socket, "A6", "=3*3");
+  sendCell(client_socket, "A6", "=3*3");**/
 }
 
 /**
@@ -299,13 +300,13 @@ void SpreadsheetServer::cellReceived(int client_socket, std::vector<std::string>
     }
   cell = tokens.at(1);
   contents = tokens.at(2);
-  /*
-  connections_lock.lock();
+  
+  /**connections_lock.lock();
   Spreadsheet s = sprd_connections.find(client_socket)->second;
-  connections.lock.unlock();
+  connections_lock.unlock();
   // sprd_connections[client_socket] gives second
-  s.setCell(cell, contents);
-  */
+  s.setCell(cell, contents);**/
+  
 
   // For now echo the changes back to the client
   sendCell(client_socket, cell, contents);

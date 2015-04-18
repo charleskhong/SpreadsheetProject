@@ -29,13 +29,14 @@ Spreadsheet::Spreadsheet(const char* fname)
   ifstream sprdfile (filename);
   // filename = fname; RAJUL YOU HAVE TO DECLARE IT BEFORE USING IT
   circular = 11;
-  std::string cellname, contents;
+ 
   
 
   if (sprdfile.is_open())
     {
       while (getline (sprdfile,line) )
 	{
+	  std::string cellname, contents;
 	  // <cellname> <contents>\n
 	  stringstream ss(line);
 	  
@@ -54,9 +55,8 @@ Spreadsheet::Spreadsheet(const char* fname)
     }
   else
     {
-      cout << "Unable to open file"; 
-      
-      
+      cout << "Spreadsheet does not exist on server yet" << endl; 
+            
     }
 }
 
@@ -69,7 +69,6 @@ bool Spreadsheet::setCell(std::string name, std::string contents)
   } catch (const std::out_of_range& oor){
 
   }
-
   //regex e("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
 
  
@@ -82,33 +81,40 @@ if(contents.substr(0,1).compare("=")==0)
       vector<string> dependees_backup;
       vector<string> dependents;
 
-      dependents.push_back(name);
+      //      dependents.push_back(name);
       dependees_backup = graph.GetDependees(name);
-      cmatch test;
-
-
+      //      cmatch test;
 
       string delim("+-/*");
       boost::split(temp, content_formula, boost::is_any_of(delim));
       
       for(int i=0; i<temp.size(); i++)
-	{
+	{	  
+	  // If first character is a letter it is a variable
+	  token = temp.at(i);
+	  char c = token[0];
+	  if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122))	    
+	    {
+	      variables.push_back(token);
+	    }
 	  /*
 	  if(boost::regex_match(temp[i],test, e))
 	    {
 	      variables.push_back(temp[i]);
 	      }*/
 	}
+      
       graph.ReplaceDependees(name, variables);
       
       try
 	{
-	  set<string> cells = getCellsToRecalculate(name);
-	  
+	  getCellsToRecalculate(name);
+	  /*
 	  for(set<string>::iterator it = cells.begin(); it!=cells.end(); it++)
 	    {
 	      dependents.push_back(*it);
 	    }
+	  */
 	  
 	}
       catch(int i)
@@ -119,7 +125,6 @@ if(contents.substr(0,1).compare("=")==0)
 	      return false;
 	    }
 	}
-      
     }
  if(contents.compare("")==0)
    cells.erase(name);
@@ -134,6 +139,7 @@ if(contents.substr(0,1).compare("=")==0)
        }
    }
 
+ saveFile();
  return true;
 }
 
@@ -143,13 +149,15 @@ std::set<std::string> Spreadsheet::getCellsToRecalculate(std::set<std::string> n
 {
   
   std::set<std::string> visited;
-  std::vector<std::string> changed;
+  std::set<std::string> changed;
   for(std::set<std::string>::iterator it = names.begin(); it != names.end(); ++it) { 
     const bool vis = visited.find(*it) != visited.end();
-     if(vis){
+     if(!vis){
        visit(*it, *it, visited, changed);
      }
   }
+  return changed;
+
   
 }
 
@@ -160,7 +168,7 @@ std::set<std::string> Spreadsheet::getCellsToRecalculate(std::string name)
   return getCellsToRecalculate(s); 
 }
 
-void Spreadsheet::visit(std::string start,  std::string name, std::set<std::string> visited, std::vector<std::string> changed)
+void Spreadsheet::visit(std::string start,  std::string name, std::set<std::string> visited, std::set<std::string> changed)
 {
   visited.insert(name);
   std::vector<std::string> d  = graph.GetDependents(name);
@@ -179,8 +187,8 @@ void Spreadsheet::visit(std::string start,  std::string name, std::set<std::stri
 }
 
 bool Spreadsheet::saveFile(){
-  cells["B5"] = "time";
-  cells["R5"] = "768";
+  //cells["B5"] = "time";
+   //cells["R5"] = "768";
 
   ofstream myfile (filename);
   if(myfile.is_open()){
@@ -192,7 +200,7 @@ bool Spreadsheet::saveFile(){
   }
   else {
     // File didn't open
-    cout << "Unable to open file";
+    cout << "Unable to open file" << endl;
     return false;
   }
   
