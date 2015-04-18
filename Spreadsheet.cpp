@@ -25,8 +25,9 @@ Spreadsheet::Spreadsheet()
 Spreadsheet::Spreadsheet(const char* fname)
 {
   string line;
+  filename = fname; 
   ifstream sprdfile (filename);
-  filename = fname;
+  // filename = fname; RAJUL YOU HAVE TO DECLARE IT BEFORE USING IT
   circular = 11;
   std::string cellname, contents;
   
@@ -39,18 +40,18 @@ Spreadsheet::Spreadsheet(const char* fname)
 	  stringstream ss(line);
 	  
 	  ss>>cellname;
+
 	  string c;
-	 
 	  while(ss>>c)
 	    contents= contents+c+" ";
 	  
 	  contents = contents.substr(0, contents.size()-1);
 
-	  
+	  cells[cellname] = contents; // ADD THE NEWB INTO IT RAJUL YOU NEWB
+
 	}
       sprdfile.close();
     }
-
   else
     {
       cout << "Unable to open file"; 
@@ -61,8 +62,15 @@ Spreadsheet::Spreadsheet(const char* fname)
 
 bool Spreadsheet::setCell(std::string name, std::string contents)
 {
+  try{
+    if(cells.at(name).compare(contents) == 0){
+      return false;
+    }
+  } catch (const std::out_of_range& oor){
 
-regex e("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
+  }
+
+  //regex e("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
 
  
 if(contents.substr(0,1).compare("=")==0)	    
@@ -85,10 +93,11 @@ if(contents.substr(0,1).compare("=")==0)
       
       for(int i=0; i<temp.size(); i++)
 	{
+	  /*
 	  if(boost::regex_match(temp[i],test, e))
 	    {
 	      variables.push_back(temp[i]);
-	    }
+	      }*/
 	}
       graph.ReplaceDependees(name, variables);
       
@@ -169,5 +178,24 @@ void Spreadsheet::visit(std::string start,  std::string name, std::set<std::stri
   changed.insert(changed.begin(), name);
 }
 
+bool Spreadsheet::saveFile(){
+  cells["B5"] = "time";
+  cells["R5"] = "768";
 
+  ofstream myfile (filename);
+  if(myfile.is_open()){
+    for(std::map<string, string>::iterator it = cells.begin(); it != cells.end(); ++it){
+      myfile << it->first + " " + it->second + "\n"; 
+    }
+    myfile.close();
+    return true;
+  }
+  else {
+    // File didn't open
+    cout << "Unable to open file";
+    return false;
+  }
+  
+
+}
 

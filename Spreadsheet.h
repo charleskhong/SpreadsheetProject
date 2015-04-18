@@ -17,6 +17,7 @@
 #include <fstream>
 
 
+
 class Spreadsheet
 {
  public:
@@ -31,15 +32,15 @@ class Spreadsheet
   // Cell name, cell contents
   std::map<std::string, std::string> cells;
   std::vector<std::pair<std::string, std::string> > undo_stack;
+  bool saveFile();
 
  private:
   DependencyGraph graph;
   int circular;
-  void saveFile();
   std::set<std::string> getCellsToRecalculate(std::set<std::string> names);
   std::set<std::string> getCellsToRecalculate(std::string name);
   void visit(std::string start, std::string name, std::set<std::string> visited,  std::vector<std::string> changed);
-
-};
+  
+  };
 
 #endif
