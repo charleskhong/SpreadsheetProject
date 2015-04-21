@@ -165,7 +165,7 @@ std::pair<std::string, std::string> Spreadsheet::undo()
       name = prev.first;
       contents = prev.second;
       std::pair<std::string,std::string> undo = pair<string,string>(name, contents);
-
+      undo_stack.erase(undo_stack.end()-1);
 
       if(contents.compare("")==0)
 	cells.erase(name);
@@ -179,6 +179,7 @@ std::pair<std::string, std::string> Spreadsheet::undo()
 	      cells.insert(undo);
 	    }
 	}
+      saveFile();
       return undo;
     }
 

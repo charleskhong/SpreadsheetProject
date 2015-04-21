@@ -102,6 +102,7 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
 
 	  // Spreadsheet make a function to return number of cells
 	  numcells = open_spreadsheets.at(i).cells.size();
+	  s = open_spreadsheets.at(i);
 	  break;
 	}
     }
@@ -178,6 +179,26 @@ void SpreadsheetServer::messageReceived(int client_socket)
   else
     {
       cout << "client disconnected" << endl;
+
+      connections_lock.lock();
+      const char * filename = sprd_connections.find(client_socket)->second;
+      sprd_connections.erase(client_socket);
+      connections_lock.unlock();
+
+      spreadsheets_lock.lock();
+      for (int i = 0; i < open_spreadsheets.size(); i++)
+	{
+	  if (strcmp(open_spreadsheets.at(i).filename, filename) == 0)
+	    {
+	      open_spreadsheets.at(i).sockets.erase(find(open_spreadsheets.at(i).sockets.begin(), open_spreadsheets.at(i).sockets.end(), client_socket));
+	      if(open_spreadsheets.at(i).sockets.size() == 0)
+		{
+		  cout << "something" << endl;
+		  open_spreadsheets.erase(open_spreadsheets.begin()+i);
+		}
+	    }
+	}
+      spreadsheets_lock.unlock();
       return;
     }
   /*  while (n > 0)
@@ -209,30 +230,25 @@ void SpreadsheetServer::messageReceived(int client_socket)
     {
       cout << "connect received" << endl;
       connectReceived(client_socket, tokens);
-      // connect received
     }
   else if (command.compare("register") == 0)
     {
       cout << "register received" << endl;
       registerReceived(client_socket, tokens);
-      // register received
     }
   else if (command.compare("cell") == 0)
     {
       cout << "cell received" << endl;
       cellReceived(client_socket, tokens);
-      // cell command
     }
   else if (command.compare("undo") == 0)
     {
       cout << "undo received" << endl;
       undoReceived(client_socket, tokens);
-      // undo command
     }
   else
     {
       sendError(client_socket, 2, "Invalid command");
-      // unrecognized command
     }
 
   messageReceived(client_socket);
@@ -341,8 +357,7 @@ void SpreadsheetServer::cellReceived(int client_socket, std::vector<std::string>
 	    {	     
 	      s = open_spreadsheets.at(i);
 	      vector<int> sockets = s.sockets;
-	      cout << "sockets connected to sheet: " << open_spreadsheets.at(i).sockets.size() << endl;
-	      cout << "sockets connected to sheettttt: " << sockets.size() << endl;
+
 	      for(int i = 0; i < sockets.size(); i++)
 		{
 		  cout << sockets.at(i) << endl;
@@ -355,23 +370,6 @@ void SpreadsheetServer::cellReceived(int client_socket, std::vector<std::string>
 	}
     }
   spreadsheets_lock.unlock();
-  // sprd_connections[client_socket] gives second
-  /* bool not_circular = s.setCell(cell, contents);
-  if (not_circular)
-    {
-      vector<int> sockets = s.get_sockets();
-      cout << "sockets connected to sheet: " << sockets.size() << endl;
-      for(int i = 0; i < sockets.size(); i++)
-        {
-	  sendCell(sockets.at(i), cell, contents);
-	}    
-    }
-  else
-    sendError(client_socket, 1, "Circular dependency occurs with this change");
-  */
-
-  // For now echo the changes back to the client
-  //sendCell(client_socket, cell, contents);
 
 }
 
@@ -394,25 +392,37 @@ void SpreadsheetServer::undoReceived(int client_socket, std::vector<std::string>
       return;
     }
 
-  /*
   connections_lock.lock();
-  Spreadsheet s = sprd_connections.find(client_socket)->second;
+  const char* filename = sprd_connections.find(client_socket)->second;
   connections_lock.unlock();
-  std::pair<std::string, std::string> change;
-  change = s.undo();
-  string name, contents;
-  name = change.first;
-  contents = change.second;
 
-  if (name.compare("ERROR") != 0)
+  spreadsheets_lock.lock();
+  Spreadsheet s;
+  for (int i = 0; i < open_spreadsheets.size(); i++)
     {
-      vector<int> sockets = s.get_sockets();
-      for (int i = 0; i < sockets.size(); i++)
-	sendCell(sockets.at(i), name, contents);
+      if (strcmp(filename, open_spreadsheets.at(i).filename) == 0)
+	{
+	  std::pair<std::string, std::string> change;
+	  change = open_spreadsheets.at(i).undo();
+	  s = open_spreadsheets.at(i);
+
+	  string name, contents;
+	  name = change.first;
+	  contents = change.second;
+
+	  if (name.compare("ERROR") != 0)
+	    {
+	      vector<int> sockets = s.sockets;
+	      for (int i = 0; i < sockets.size(); i++)
+		sendCell(sockets.at(i), name, contents);
+	    }
+	  else
+	    sendError(client_socket, 3, "Cannot undo before a change has been made");
+
+	  return;
+	}
     }
-  else
-    sendError(client_socket, 3, "Cannot undo before a change has been made");
-  */
+  
 }
 
 void SpreadsheetServer::sendConnected(int client_socket, int numcells)

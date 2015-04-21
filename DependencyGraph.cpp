@@ -133,8 +133,8 @@ void DependencyGraph::ReplaceDependents(string s, vector<string> newDependents){
 
 void DependencyGraph::ReplaceDependees(string s, vector<string> newDependees) {
   if(key_to_dependees.count(s) == 1) {
-    for (vector<string>::iterator it = key_to_dependees[s].begin(); it != key_to_dependees[s].end(); ++it)
-      RemoveDependency(*it, s);
+    for (int i = key_to_dependees[s].size() - 1; i >= 0; i--)
+      RemoveDependency(key_to_dependees[s].at(i), s);
     for (vector<string>::iterator it = newDependees.begin(); it != newDependees.end(); ++it)
       AddDependency(*it, s);
   } else  { // Only add if it does not exist
