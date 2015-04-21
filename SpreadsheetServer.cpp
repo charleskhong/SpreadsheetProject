@@ -43,8 +43,15 @@ SpreadsheetServer::SpreadsheetServer(int port)
 
   if (::bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
     error("ERROR on binding");
-
-  registered_users.insert("sysadmin");
+  if(!load_users())
+    {
+      registered_users.insert("sysadmin");
+      save_users();
+    }
+  else
+    {
+      cout<<"Loaded users successfully"<<endl;
+    }
 
   cout << "Server initialized" << endl;
 }
@@ -77,6 +84,58 @@ void SpreadsheetServer::start()
 
   close(server_socket);
 }
+
+
+bool SpreadsheetServer::save_users()
+{
+  //cells["R5"] = "768";
+
+  ofstream userfile ("usernames");
+  if(userfile.is_open()){
+    for (std::set<string>::iterator it=registered_users.begin(); it!=registered_users.end(); ++it)
+      {
+	userfile << *it+ "\n";
+      }
+    userfile.close();
+    return true;
+  }
+  else {
+    // File didn't open
+    cout << "Unable to open user file" << endl;
+    return false;
+  }
+  
+}
+
+bool SpreadsheetServer::load_users()
+{
+  string line;
+  ifstream userfile ("usernames");
+  if (userfile.is_open())
+    {
+      while (getline (userfile,line) )
+	{
+	  std::string username;
+	  stringstream ss(line);
+	  
+	  ss>>username;
+	  registered_users.insert(username);
+	  
+	}
+      userfile.close();
+      return true;
+    }
+  else
+    {
+      cout<<"Username file does not exist"<<endl;
+      return false;
+    }
+}
+
+
+
+
+
 
 /**
  *
@@ -311,6 +370,7 @@ void SpreadsheetServer::registerReceived(int client_socket, std::vector<std::str
   // ret.second - true if newly inserted. false if already existed
   users_lock.lock();
   std::pair<std::set<std::string>::iterator, bool> ret = registered_users.insert(username);
+  save_users();
   users_lock.unlock();
 
   // User was already registered
@@ -334,6 +394,7 @@ void SpreadsheetServer::cellReceived(int client_socket, std::vector<std::string>
       return;
     }
 
+  //need to check when they empty out a string and send [Cell <callname> ""\n]
   if (tokens.size() != 3)
     {
       sendError(client_socket, 2, "Incorrect number of tokens");

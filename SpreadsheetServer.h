@@ -64,6 +64,8 @@ class SpreadsheetServer
   void cellReceived(int client_socket, std::vector<std::string> tokens);
   void undoReceived(int client_socket, std::vector<std::string> tokens);
 
+  bool save_users();
+  bool load_users();
   /*
    * Check to see if the spreadsheet exists
    * add to data structures (even if old or new)
