@@ -18,6 +18,15 @@ Spreadsheet::Spreadsheet()
 {
 }
 
+Spreadsheet::Spreadsheet(const Spreadsheet &other)
+{
+  filename = other.filename;
+  sockets = other.sockets;
+  graph = other.graph;
+  cells = other.cells;
+  undo_stack = other.undo_stack;
+}
+
 /*
 * Reads from file provided. Loads the given spreadsheet if it exists. 
 * If not, makes a new one.
@@ -48,7 +57,8 @@ Spreadsheet::Spreadsheet(const char* fname)
 	  
 	  contents = contents.substr(0, contents.size()-1);
 
-	  cells[cellname] = contents; // ADD THE NEWB INTO IT RAJUL YOU NEWB
+	  //	  cells[cellname] = contents; // ADD THE NEWB INTO IT RAJUL YOU NEWB
+	  setCell(cellname, contents);
 
 	}
       sprdfile.close();
@@ -62,17 +72,18 @@ Spreadsheet::Spreadsheet(const char* fname)
 
 bool Spreadsheet::setCell(std::string name, std::string contents)
 {
-  try{
-    if(cells.at(name).compare(contents) == 0){
-      return false;
+  try
+    {
+      if(cells.at(name).compare(contents) == 0)	
+	return true;	
+    } 
+  catch (const std::out_of_range& oor)
+    {      
     }
-  } catch (const std::out_of_range& oor){
 
-  }
   //regex e("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
-
  
-if(contents.substr(0,1).compare("=")==0)	    
+  if(contents.substr(0,1).compare("=")==0)	    
     {
       string content_formula = contents.substr(1);
       string token;
@@ -97,53 +108,82 @@ if(contents.substr(0,1).compare("=")==0)
 	    {
 	      variables.push_back(token);
 	    }
-	  /*
-	  if(boost::regex_match(temp[i],test, e))
-	    {
-	      variables.push_back(temp[i]);
-	      }*/
 	}
-      
+            
       graph.ReplaceDependees(name, variables);
       
       try
 	{
 	  getCellsToRecalculate(name);
-	  /*
-	  for(set<string>::iterator it = cells.begin(); it!=cells.end(); it++)
-	    {
-	      dependents.push_back(*it);
-	    }
-	  */
-	  
 	}
       catch(int i)
 	{
 	  if(i==circular)
 	    {
+	      cout << "Circular dependency!" << endl;
+	      // SEG FAULT HERE
 	      graph.ReplaceDependees(name, dependees_backup);
 	      return false;
 	    }
 	}
     }
- if(contents.compare("")==0)
-   cells.erase(name);
- else
-   {
-     std::pair<std::map<string,string>::iterator, bool> ret;
-     ret = cells.insert ( std::pair<std::string,std::string>(name, contents));
-     if(ret.second == false)
-       {
-	 cells.erase(name);
-	 cells.insert ( std::pair<std::string,std::string>(name, contents));
-       }
-   }
 
- saveFile();
- return true;
+  map<string, string>::iterator it = cells.find(name);
+  string prev_contents;
+  if (it != cells.end())
+      prev_contents = it->second;
+  else
+    prev_contents = "";
+
+  if(contents.compare("")==0)
+    cells.erase(name);
+  else
+    {
+      std::pair<std::map<string,string>::iterator, bool> ret;
+      ret = cells.insert ( std::pair<std::string,std::string>(name, contents));
+      if(ret.second == false)
+	{
+	  cells.erase(name);
+	  cells.insert ( std::pair<std::string,std::string>(name, contents));
+	}
+    }
+  undo_stack.push_back(pair<string, string>(name, prev_contents));
+  saveFile();
+  return true;
 }
 
+std::pair<std::string, std::string> Spreadsheet::undo()
+{
+  // Empty return empty list
+  if (undo_stack.size() == 0)
+    return std::pair<std::string, std::string>("ERROR", "ERROR");
+  else
+    {
+      pair<string, string> prev;
+      string name, contents;
+      prev = undo_stack.back();
+      name = prev.first;
+      contents = prev.second;
+      std::pair<std::string,std::string> undo = pair<string,string>(name, contents);
 
+
+      if(contents.compare("")==0)
+	cells.erase(name);
+      else
+	{
+	  std::pair<std::map<string,string>::iterator, bool> ret;
+	  ret = cells.insert (undo);
+	  if(ret.second == false)
+	    {
+	      cells.erase(name);
+	      cells.insert(undo);
+	    }
+	}
+      return undo;
+    }
+
+
+}
 
 std::set<std::string> Spreadsheet::getCellsToRecalculate(std::set<std::string> names)
 {

@@ -42,7 +42,7 @@ class SpreadsheetServer
 
 
   // <Key, value>: <Socket, Spreadsheet>
-  std::map<int, Spreadsheet> sprd_connections;
+  std::map<int, const char*> sprd_connections;
 
   // Active spreadsheets
   // ? Load all spreadsheets up front or go to disk when needed

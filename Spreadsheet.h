@@ -15,16 +15,19 @@
 #include <set>
 #include <iostream>
 #include <fstream>
-
+//#include <mutex>
 
 
 class Spreadsheet
 {
  public:
   Spreadsheet();
+  Spreadsheet(const Spreadsheet &other);
   Spreadsheet(const char* fname);
  
   bool setCell(std::string name, std::string contents);
+  std::pair<std::string, std::string> undo();
+  bool saveFile();
 
 
   const char* filename;
@@ -32,9 +35,8 @@ class Spreadsheet
   // Cell name, cell contents
   std::map<std::string, std::string> cells;
   std::vector<std::pair<std::string, std::string> > undo_stack;
-  bool saveFile();
 
- private:
+  // private:
   DependencyGraph graph;
   int circular;
   std::set<std::string> getCellsToRecalculate(std::set<std::string> names);
