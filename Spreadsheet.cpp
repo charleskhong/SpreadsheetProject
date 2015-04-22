@@ -35,42 +35,52 @@ Spreadsheet::Spreadsheet(const char* fname)
 {
   string line;
   filename = fname; 
-  ifstream sprdfile (filename);
-  // filename = fname; RAJUL YOU HAVE TO DECLARE IT BEFORE USING IT
   circular = 11;
+
+  // Open the specified file
+  ifstream sprdfile (filename);
  
+  // If the file exists
   if (sprdfile.is_open())
     {
+      // Read every line from the file
       while (getline (sprdfile,line) )
 	{
+	  // Parse the line from the file into cell name and contents
 	  std::string cellname, contents;
-	  // <cellname> <contents>\n
-	  stringstream ss(line);
-	  
-	  ss>>cellname;
+	  stringstream ss(line);	  
+	  ss >> cellname;
 
+	  // Contents can have spaces in them
 	  string c;
-	  while(ss>>c)
-	    contents= contents+c+" ";
+	  while(ss >> c)
+	    contents = contents + c + " ";
 	  
+	  // Remove the last " "
 	  contents = contents.substr(0, contents.size()-1);
 
-	  //	  cells[cellname] = contents; // ADD THE NEWB INTO IT RAJUL YOU NEWB
+	  // Call setCell to add the cell and its contents to the spreadsheet
 	  setCell(cellname, contents);
 
+	  // Remove the change from the undo stack
+	  undo_stack.pop_back();
 	}
+
+      // Done reading, close the file
       sprdfile.close();
     }
   else
     {
-      cout << "Spreadsheet does not exist on server yet" << endl; 
-            
+      // File does not exist on server, if a change is made it will be saved
+      cout << "Spreadsheet does not exist on server yet" << endl;             
     }
 }
 
 bool Spreadsheet::setCell(std::string name, std::string contents)
 {
   //  lock.lock();
+
+  // If the contents aren't being changed
   try
     {
       if(cells.at(name).compare(contents) == 0)	
@@ -80,8 +90,12 @@ bool Spreadsheet::setCell(std::string name, std::string contents)
     {      
     }
 
-  //regex e("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
- 
+  // Normalize the cell name by capitalizing the letter
+  char c = name[0];
+  if (c >= 97 && c <= 122)
+    name[0] -= 32;
+
+  // If the content contains a formula
   if(contents.substr(0,1).compare("=")==0)	    
     {
       string content_formula = contents.substr(1);
@@ -91,36 +105,46 @@ bool Spreadsheet::setCell(std::string name, std::string contents)
       vector<string> dependees_backup;
       vector<string> dependents;
 
-      //      dependents.push_back(name);
+      // Keep track of old dependees in case of circular dependency
       dependees_backup = graph.GetDependees(name);
-      //      cmatch test;
 
-      string delim("+-/*");
+      // Split the contents by the operators
+      string delim("+-/* ");
       boost::split(temp, content_formula, boost::is_any_of(delim));
       
       for(int i=0; i<temp.size(); i++)
 	{	  
-	  // If first character is a letter it is a variable
 	  token = temp.at(i);
 	  char c = token[0];
-	  if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122))	    
+
+	  // First character is uppercase letter
+	  if (c >= 65 && c <= 90)    
 	    {
+	      variables.push_back(token);
+	    }
+
+	  // First character is lowercase letter
+	  else if (c >= 97 && c <= 122)
+	    {
+	      token[0] -= 32;
 	      variables.push_back(token);
 	    }
 	}
             
+      // Replace the dependees of the current cell with the variables in the formula
       graph.ReplaceDependees(name, variables);
       
+      // Search for circular dependencies
       try
 	{
 	  getCellsToRecalculate(name);
 	}
       catch(int i)
 	{
-	  if(i==circular)
+	  if(i == circular)
 	    {
+	      // Undo the changes in the dependency graph
 	      cout << "Circular dependency!" << endl;
-	      // SEG FAULT HERE
 	      graph.ReplaceDependees(name, dependees_backup);
 	      return false;
 	    }
@@ -129,24 +153,33 @@ bool Spreadsheet::setCell(std::string name, std::string contents)
 
   map<string, string>::iterator it = cells.find(name);
   string prev_contents;
+
+  // Find what the cell contained before changes
   if (it != cells.end())
       prev_contents = it->second;
   else
     prev_contents = "";
 
+  // Cells containing an empty string need to be removed from the map
   if(contents.compare("")==0)
     cells.erase(name);
+
+  // Remove the previous cell and update with the changes
   else
     {
       std::pair<std::map<string,string>::iterator, bool> ret;
       ret = cells.insert ( std::pair<std::string,std::string>(name, contents));
       if(ret.second == false)
-	{
+      	{
 	  cells.erase(name);
 	  cells.insert ( std::pair<std::string,std::string>(name, contents));
-	}
+      	}
     }
+
+  // Add the change to the undo stack
   undo_stack.push_back(pair<string, string>(name, prev_contents));
+
+  // Change has been made, save the file
   saveFile();
   //lock.unlock();
   return true;
@@ -155,7 +188,8 @@ bool Spreadsheet::setCell(std::string name, std::string contents)
 std::pair<std::string, std::string> Spreadsheet::undo()
 {
   //lock.lock();
-  // Empty return empty list
+
+  // Undo stack is empty
   if (undo_stack.size() == 0)
     return std::pair<std::string, std::string>("ERROR", "ERROR");
   else
@@ -166,8 +200,11 @@ std::pair<std::string, std::string> Spreadsheet::undo()
       name = prev.first;
       contents = prev.second;
       std::pair<std::string,std::string> undo = pair<string,string>(name, contents);
+
+      // Remove the change from the stack
       undo_stack.erase(undo_stack.end()-1);
 
+      // If changing back to an empty string, remove from map
       if(contents.compare("")==0)
 	cells.erase(name);
       else
@@ -180,6 +217,8 @@ std::pair<std::string, std::string> Spreadsheet::undo()
 	      cells.insert(undo);
 	    }
 	}
+
+      // Changes were made save the file
       saveFile();
       return undo;
     }
@@ -218,8 +257,6 @@ void Spreadsheet::visit(std::string start,  std::string name, std::set<std::stri
     const bool vis = visited.find(*it) != visited.end();
     if(*it == start){
       throw circular;
-      //Exception Circular
-
     } else if(!vis){
       visit(start, *it, visited, changed);
     }

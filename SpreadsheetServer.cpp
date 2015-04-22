@@ -89,7 +89,7 @@ bool SpreadsheetServer::save_users()
 {
   //cells["R5"] = "768";
 
-  ofstream userfile ("usernames");
+  ofstream userfile ("usernames.usrs");
   if(userfile.is_open()){
     for (std::set<string>::iterator it=registered_users.begin(); it!=registered_users.end(); ++it)
       {
@@ -109,7 +109,7 @@ bool SpreadsheetServer::save_users()
 bool SpreadsheetServer::load_users()
 {
   string line;
-  ifstream userfile ("usernames");
+  ifstream userfile ("usernames.usrs");
   if (userfile.is_open())
     {
       while (getline (userfile,line) )
@@ -252,9 +252,10 @@ void SpreadsheetServer::messageReceived(int client_socket)
     }*/
   // Read one byte at a time
   n = read(client_socket, buffer, 1);
+  cout << "Client: ";
   while (n > 0)
     {
-      cout << buffer << endl;
+      cout << buffer;
       char c = buffer[0];
       if (c == '\n')
 	break;
@@ -287,7 +288,6 @@ void SpreadsheetServer::messageReceived(int client_socket)
       return;
     }
   // make this not break
-  cout << line << endl;
   std::stringstream ss(line);
   std::string token;
   while (ss >> token)
@@ -421,17 +421,45 @@ void SpreadsheetServer::cellReceived(int client_socket, std::vector<std::string>
     }
 
   //need to check when they empty out a string and send [Cell <callname> ""\n]
-  if (tokens.size() != 3 && tokens.size() != 2)
+  if (tokens.size() == 1)
     {
       sendError(client_socket, 2, "Incorrect number of tokens");
       return;
     }
+  /*  if (tokens.size() != 3 && tokens.size() != 2)
+    {
+      sendError(client_socket, 2, "Incorrect number of tokens");
+      return;
+      }*/
   else if (tokens.size() == 2)
     contents = "";
   else
-    contents = tokens.at(2);
+    {
+      for (int i = 2; i < tokens.size(); i++)
+	contents += tokens.at(i) + " ";
+      contents = contents.substr(0, contents.size()-1);
+    }
 
+  // check cell syntax
   cell = tokens.at(1);
+  int chars = cell.size();
+  char c = cell[0];
+  if (cell.size() != 2 || cell.size() != 3)
+    {
+      sendError(client_socket, 2 ,"Invalid cell name");
+      return;
+    }
+  if (!(c >= 65 && c <= 90) && !(c >= 97 && c <= 122))
+    {
+      sendError(client_socket, 2 ,"Invalid cell name");
+      return;
+    }
+  for (int i = 1; i < chars; i++)
+    if (!(cell[i] >= 48 && cell[i] <= 57))
+      {
+	sendError(client_socket, 2, "Invalid cell name");
+	return;
+      }
   
   connections_lock.lock();
   const char * filename = sprd_connections.find(client_socket)->second;
@@ -524,6 +552,7 @@ void SpreadsheetServer::sendConnected(int client_socket, int numcells)
   if (length < 0)
     error("ERROR creating connected message");
   n = write(client_socket, message, length);
+  cout << "Server: " << message;
   if (n < 0)
     error("ERROR writing to socket");
 }
@@ -539,6 +568,8 @@ void SpreadsheetServer::sendCell(int client_socket, std::string cell_name, std::
     error("ERROR creating send cell message");
 
   n = write(client_socket, message, length);
+  cout << "Server: " << message;
+
   if (n < 0)
     error("ERROR writing to socket");
 }
@@ -553,6 +584,7 @@ void SpreadsheetServer::sendError(int client_socket, int error_num, std::string 
     error("ERROR creating client error message");
 
   n = write(client_socket, message, length);
+  cout << "Server: " << message;
 
   if (n < 0)
     error("ERROR writing to socket");
