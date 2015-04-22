@@ -39,8 +39,6 @@ Spreadsheet::Spreadsheet(const char* fname)
   // filename = fname; RAJUL YOU HAVE TO DECLARE IT BEFORE USING IT
   circular = 11;
  
-  
-
   if (sprdfile.is_open())
     {
       while (getline (sprdfile,line) )
@@ -72,6 +70,7 @@ Spreadsheet::Spreadsheet(const char* fname)
 
 bool Spreadsheet::setCell(std::string name, std::string contents)
 {
+  //  lock.lock();
   try
     {
       if(cells.at(name).compare(contents) == 0)	
@@ -149,11 +148,13 @@ bool Spreadsheet::setCell(std::string name, std::string contents)
     }
   undo_stack.push_back(pair<string, string>(name, prev_contents));
   saveFile();
+  //lock.unlock();
   return true;
 }
 
 std::pair<std::string, std::string> Spreadsheet::undo()
 {
+  //lock.lock();
   // Empty return empty list
   if (undo_stack.size() == 0)
     return std::pair<std::string, std::string>("ERROR", "ERROR");
@@ -183,7 +184,7 @@ std::pair<std::string, std::string> Spreadsheet::undo()
       return undo;
     }
 
-
+  //lock.unlock();
 }
 
 std::set<std::string> Spreadsheet::getCellsToRecalculate(std::set<std::string> names)
@@ -228,8 +229,6 @@ void Spreadsheet::visit(std::string start,  std::string name, std::set<std::stri
 }
 
 bool Spreadsheet::saveFile(){
-  //cells["B5"] = "time";
-   //cells["R5"] = "768";
 
   ofstream myfile (filename);
   if(myfile.is_open()){

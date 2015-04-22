@@ -161,11 +161,18 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
 
 	  // Spreadsheet make a function to return number of cells
 	  numcells = open_spreadsheets.at(i).cells.size();
-	  s = open_spreadsheets.at(i);
+	  sendConnected(client_socket, numcells);
+	  // Send all non-empty cells and their contents to the client
+	  for (map<string, string>::iterator it = open_spreadsheets.at(i).cells.begin(); it != open_spreadsheets.at(i).cells.end(); it++)
+	    {
+	      string cell = it->first;
+	      string content = it->second;
+	      
+	      sendCell(client_socket, cell, content);
+	    }
 	  break;
 	}
     }
-  spreadsheets_lock.unlock();
 
   // If the spreadsheet has not been opened before
   if (!exists)
@@ -177,26 +184,27 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
       s.sockets.push_back(client_socket);
 
       // Spreadsheet is now an active spreadsheet
-      spreadsheets_lock.lock();
       open_spreadsheets.push_back(s);
-      spreadsheets_lock.unlock();      
+      sendConnected(client_socket, numcells);
+      // Send all non-empty cells and their contents to the client
+      for (map<string, string>::iterator it = s.cells.begin(); it != s.cells.end(); it++)
+	{
+	  string cell = it->first;
+	  string content = it->second;
+	  
+	  sendCell(client_socket, cell, content);
+	}
     }
+  spreadsheets_lock.unlock();
 
   // Indicate the connection between socket and the spreadsheet
   connections_lock.lock();
   sprd_connections.insert(std::pair<int, const char*>(client_socket, file));
   connections_lock.unlock();
 
-  sendConnected(client_socket, numcells);
 
-   // Send all non-empty cells and their contents to the client
-  for (map<string, string>::iterator it = s.cells.begin(); it != s.cells.end(); it++)
-    {
-      string cell = it->first;
-      string content = it->second;
 
-      sendCell(client_socket, cell, content);
-    } 
+   
 
   // Send the cells
   /**sendCell(client_socket, "A1", "This");
@@ -252,7 +260,6 @@ void SpreadsheetServer::messageReceived(int client_socket)
 	      open_spreadsheets.at(i).sockets.erase(find(open_spreadsheets.at(i).sockets.begin(), open_spreadsheets.at(i).sockets.end(), client_socket));
 	      if(open_spreadsheets.at(i).sockets.size() == 0)
 		{
-		  cout << "something" << endl;
 		  open_spreadsheets.erase(open_spreadsheets.begin()+i);
 		}
 	    }
@@ -284,7 +291,12 @@ void SpreadsheetServer::messageReceived(int client_socket)
   // Delimits by space rather than whitespace
   /*while (getline(ss, token, ' '))
     tokens.push_back(token);*/
-  std::string command (tokens.at(0));
+  std::string command;
+  if (tokens.size() > 0)
+    command = (tokens.at(0));
+  else
+    command = "";
+
   if (command.compare("connect") == 0)
     {
       cout << "connect received" << endl;
@@ -317,6 +329,15 @@ void SpreadsheetServer::connectReceived(int client_socket, std::vector<std::stri
 {
   std::string user, filename;
 
+  // Client has already connected to a spreadsheet
+  spreadsheets_lock.lock();
+  int con = sprd_connections.count(client_socket);
+  spreadsheets_lock.unlock();
+  if (con == 1)
+    {
+      sendError(client_socket, 3, "Already connected to a spreadsheet");
+      return;
+    }
   if (tokens.size() != 3)
     {
       sendError(client_socket, 2, "Incorrect number of tokens");
