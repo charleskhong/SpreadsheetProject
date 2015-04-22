@@ -39,7 +39,6 @@ class SpreadsheetServer
    */
   void start();
 
-
   // <Key, value>: <Socket, Spreadsheet>
   std::map<int, const char*> sprd_connections;
 
@@ -62,28 +61,14 @@ class SpreadsheetServer
   void registerReceived(int client_socket, std::vector<std::string> tokens);
   void cellReceived(int client_socket, std::vector<std::string> tokens);
   void undoReceived(int client_socket, std::vector<std::string> tokens);
+  void openSpreadsheet(int client_socket, std::string filename);
 
   bool save_users();
   bool load_users();
-  /*
-   * Check to see if the spreadsheet exists
-   * add to data structures (even if old or new)
-   * 
-   * Send confirmation 
-   * Iterate through all cells and send the contents
-   * 
-   */
-  void openSpreadsheet(int client_socket, std::string filename);
 
   void sendConnected(int client_socket, int numcells);
   void sendError(int client_socket, int error_num, std::string info);
-
-  /*
-   * Construct the send command to client using the given parameters
-   * then send it to the client
-   */
   void sendCell(int client_socket, std::string cell_name, std::string contents);
-  // repeat this for the other commands
 
   int server_socket;
   struct sockaddr_in server_addr;

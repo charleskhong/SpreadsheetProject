@@ -15,8 +15,6 @@
 #include <set>
 #include <iostream>
 #include <fstream>
-#include <mutex>
-#include <thread>
 
 class Spreadsheet
 {

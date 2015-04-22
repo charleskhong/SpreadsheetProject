@@ -3,7 +3,6 @@
 
 using namespace std;
 
-void dostuff(int);
 void error(const char *msg)
 {
   perror(msg);
@@ -23,6 +22,7 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+
 
 SpreadsheetServer::SpreadsheetServer()
 {
@@ -81,7 +81,6 @@ void SpreadsheetServer::start()
       // Params: function, this object, function parameters
       std::thread (&SpreadsheetServer::messageReceived, this, client_socket).detach();
     }
-
   close(server_socket);
 }
 
@@ -131,11 +130,6 @@ bool SpreadsheetServer::load_users()
       return false;
     }
 }
-
-
-
-
-
 
 /**
  *
@@ -202,17 +196,6 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
   sprd_connections.insert(std::pair<int, const char*>(client_socket, file));
   connections_lock.unlock();
 
-
-
-   
-
-  // Send the cells
-  /**sendCell(client_socket, "A1", "This");
-  sendCell(client_socket, "A2", "is");
-  sendCell(client_socket, "A3", "a");
-  sendCell(client_socket, "A4", "preloaded");
-  sendCell(client_socket, "A5", "spreadsheet");
-  sendCell(client_socket, "A6", "=3*3");**/
 }
 
 /**
@@ -230,7 +213,7 @@ void SpreadsheetServer::messageReceived(int client_socket)
   // Read all the commands
   // If a newline is not at the end continue reading
   // 
-  n = read(client_socket, buffer, 1024);
+  /*  n = read(client_socket, buffer, 1024);
   if (n > 0)
     {
       printf(buffer);
@@ -266,21 +249,43 @@ void SpreadsheetServer::messageReceived(int client_socket)
 	}
       spreadsheets_lock.unlock();
       return;
-    }
-  /*  while (n > 0)
+    }*/
+  // Read one byte at a time
+  n = read(client_socket, buffer, 1);
+  while (n > 0)
     {
-      printf(buffer);
-      for (int i = 0; i < n; i++)
-	{
-	  char c = buffer[i];
-	  if (c == '\n')
-	    break;
-	  else
-	    line.append(1,c);
-	}
-      n = read(client_socket, buffer, 1024);
-      }*/
+      cout << buffer << endl;
+      char c = buffer[0];
+      if (c == '\n')
+	break;
+      else
+	line.append(1, c);
+      n = read(client_socket, buffer, 1);
+    }
+  if (n <= 0)
+    {
+       cout << "client disconnected" << endl;
 
+      connections_lock.lock();
+      const char * filename = sprd_connections.find(client_socket)->second;
+      sprd_connections.erase(client_socket);
+      connections_lock.unlock();
+
+      spreadsheets_lock.lock();
+      for (int i = 0; i < open_spreadsheets.size(); i++)
+	{
+	  if (strcmp(open_spreadsheets.at(i).filename, filename) == 0)
+	    {
+	      open_spreadsheets.at(i).sockets.erase(find(open_spreadsheets.at(i).sockets.begin(), open_spreadsheets.at(i).sockets.end(), client_socket));
+	      if(open_spreadsheets.at(i).sockets.size() == 0)
+		{
+		  open_spreadsheets.erase(open_spreadsheets.begin()+i);
+		}
+	    }
+	}
+      spreadsheets_lock.unlock();
+      return;
+    }
   // make this not break
   cout << line << endl;
   std::stringstream ss(line);
@@ -416,13 +421,17 @@ void SpreadsheetServer::cellReceived(int client_socket, std::vector<std::string>
     }
 
   //need to check when they empty out a string and send [Cell <callname> ""\n]
-  if (tokens.size() != 3)
+  if (tokens.size() != 3 && tokens.size() != 2)
     {
       sendError(client_socket, 2, "Incorrect number of tokens");
       return;
     }
+  else if (tokens.size() == 2)
+    contents = "";
+  else
+    contents = tokens.at(2);
+
   cell = tokens.at(1);
-  contents = tokens.at(2);
   
   connections_lock.lock();
   const char * filename = sprd_connections.find(client_socket)->second;
