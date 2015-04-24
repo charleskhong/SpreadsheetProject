@@ -15,6 +15,8 @@
 #include <set>
 #include <iostream>
 #include <fstream>
+#include <mutex>
+
 class Spreadsheet
 {
  public:
@@ -36,6 +38,7 @@ class Spreadsheet
   // private:
   DependencyGraph graph;
   int circular;
+  std::mutex lock;
   std::set<std::string> getCellsToRecalculate(std::set<std::string> names);
   std::set<std::string> getCellsToRecalculate(std::string name);
   void visit(std::string start, std::string name, std::set<std::string> visited,  std::set<std::string> changed);

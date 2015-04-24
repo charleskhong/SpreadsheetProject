@@ -20,7 +20,6 @@
 #include <vector>
 #include <set>
 #include "Spreadsheet.h"
-#include "User.h"
 #include <algorithm>
 #include <thread>
 #include <mutex>
@@ -32,21 +31,13 @@ class SpreadsheetServer
   SpreadsheetServer(int port);
   ~SpreadsheetServer();
 
-  /*
-   * Create the socket and begin listening for connections
-   * When a connection is made, call ConnectionReceived 
-   *  on a separate thread/process
-   */
   void start();
 
   // <Key, value>: <Socket, Spreadsheet>
   std::map<int, const char*> sprd_connections;
 
-  // Active spreadsheets
-  // ? Load all spreadsheets up front or go to disk when needed
-  // Con: have to constantly go through large vector
-  //  use resources/memory unnecessarily
-  std::vector<Spreadsheet> open_spreadsheets;
+
+  std::vector<Spreadsheet*> open_spreadsheets;
 
   // Registered users
   std::set<std::string> registered_users;
@@ -56,14 +47,14 @@ class SpreadsheetServer
  private:
 
 
-  void messageReceived(int client_socket);
-  void connectReceived(int client_socket, std::vector<std::string> tokens);
-  void registerReceived(int client_socket, std::vector<std::string> tokens);
-  void cellReceived(int client_socket, std::vector<std::string> tokens);
-  void undoReceived(int client_socket, std::vector<std::string> tokens);
-  void openSpreadsheet(int client_socket, std::string filename);
+  void messageReceived(int client_socket); // This is used to determine what message is sent
+  void connectReceived(int client_socket, std::vector<std::string> tokens); // When a connect message is sent this handles that
+  void registerReceived(int client_socket, std::vector<std::string> tokens); // Handles register messages which register user
+  void cellReceived(int client_socket, std::vector<std::string> tokens); // Handles cell commands to the server finds spreadsheet and changes spreadsheet
+  void undoReceived(int client_socket, std::vector<std::string> tokens); // Handles undo messages
+  void openSpreadsheet(int client_socket, std::string filename); // helper method used to open a spreadsheet
 
-  bool save_users();
+  bool save_users(); 
   bool load_users();
 
   void sendConnected(int client_socket, int numcells);

@@ -36,9 +36,11 @@ Spreadsheet::Spreadsheet(const char* fname)
   string line;
   filename = fname; 
   circular = 11;
-
+  std::string f;
+  f.append(filename);
+  f.append(".sprd");
   // Open the specified file
-  ifstream sprdfile (filename);
+  ifstream sprdfile (f);
  
   // If the file exists
   if (sprdfile.is_open())
@@ -78,13 +80,16 @@ Spreadsheet::Spreadsheet(const char* fname)
 
 bool Spreadsheet::setCell(std::string name, std::string contents)
 {
-  //  lock.lock();
+  lock.lock();
 
   // If the contents aren't being changed
   try
     {
       if(cells.at(name).compare(contents) == 0)	
-	return true;	
+	{
+	  lock.unlock();
+	  return true;	
+	}
     } 
   catch (const std::out_of_range& oor)
     {      
@@ -146,9 +151,14 @@ bool Spreadsheet::setCell(std::string name, std::string contents)
 	      // Undo the changes in the dependency graph
 	      cout << "Circular dependency!" << endl;
 	      graph.ReplaceDependees(name, dependees_backup);
+	      lock.unlock();
 	      return false;
 	    }
 	}
+    }
+  else
+    {
+      graph.ReplaceDependees(name, vector<string>());
     }
 
   map<string, string>::iterator it = cells.find(name);
@@ -181,17 +191,20 @@ bool Spreadsheet::setCell(std::string name, std::string contents)
 
   // Change has been made, save the file
   saveFile();
-  //lock.unlock();
+  lock.unlock();
   return true;
 }
 
 std::pair<std::string, std::string> Spreadsheet::undo()
 {
-  //lock.lock();
+  lock.lock();
 
   // Undo stack is empty
   if (undo_stack.size() == 0)
-    return std::pair<std::string, std::string>("ERROR", "ERROR");
+    {
+      lock.unlock();
+      return std::pair<std::string, std::string>("ERROR", "ERROR");
+    }
   else
     {
       pair<string, string> prev;
@@ -220,10 +233,10 @@ std::pair<std::string, std::string> Spreadsheet::undo()
 
       // Changes were made save the file
       saveFile();
+      lock.unlock();
       return undo;
     }
 
-  //lock.unlock();
 }
 
 std::set<std::string> Spreadsheet::getCellsToRecalculate(std::set<std::string> names)
@@ -267,7 +280,10 @@ void Spreadsheet::visit(std::string start,  std::string name, std::set<std::stri
 
 bool Spreadsheet::saveFile(){
 
-  ofstream myfile (filename);
+  std::string f;
+  f.append(filename);
+  f.append(".sprd");
+  ofstream myfile (f);
   if(myfile.is_open()){
     for(std::map<string, string>::iterator it = cells.begin(); it != cells.end(); ++it){
       myfile << it->first + " " + it->second + "\n"; 

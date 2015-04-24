@@ -10,7 +10,7 @@ server.o: SpreadsheetServer.cpp SpreadsheetServer.h
 	g++ -c SpreadsheetServer.cpp -std=gnu++0x
 
 spreadsheet.o: Spreadsheet.cpp Spreadsheet.h 
-	g++ -c Spreadsheet.cpp
+	g++ -c Spreadsheet.cpp -std=gnu++0x
 
 dependency.o: DependencyGraph.cpp DependencyGraph.h 
 	g++ -c DependencyGraph.cpp
