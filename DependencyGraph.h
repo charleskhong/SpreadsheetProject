@@ -34,6 +34,7 @@ class DependencyGraph {
  void RemoveDependency(std::string s, std::string t);
  void ReplaceDependents(std::string s, std::vector<std::string> newDependents);
  void ReplaceDependees(std::string s, std::vector<std::string> newDependees);
+ void PrintMap();
 
  private:
   int PairCount;

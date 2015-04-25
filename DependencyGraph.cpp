@@ -13,6 +13,7 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <iostream>
 
 using namespace std;
 
@@ -72,7 +73,7 @@ vector<string> DependencyGraph::GetDependees(string t){
 void DependencyGraph::AddDependency(string s, string t){
 
   if(key_to_dependents.count(s) == 1) { // This ensures only 1 unique is entered into the graph
-    if(find(key_to_dependents[s].begin(), key_to_dependents[s].end(), t) != key_to_dependents[s].end()){
+    if(find(key_to_dependents[s].begin(), key_to_dependents[s].end(), t) == key_to_dependents[s].end()){
       key_to_dependents[s].push_back(t);    
     }
   } else {
@@ -82,7 +83,7 @@ void DependencyGraph::AddDependency(string s, string t){
   }
   
  if(key_to_dependees.count(t) == 1) { // This ensures only 1 unique is entered into the graph
-   if(find(key_to_dependees[t].begin(), key_to_dependees[t].end(), s) != key_to_dependees[t].end()){ // Only insert into the vector if it does not already exist
+   if(find(key_to_dependees[t].begin(), key_to_dependees[t].end(), s) == key_to_dependees[t].end()){ // Only insert into the vector if it does not already exist
       key_to_dependees[t].push_back(s);
       PairCount++;
     }
@@ -142,3 +143,13 @@ void DependencyGraph::ReplaceDependees(string s, vector<string> newDependees) {
       AddDependency(*it, s);
   }
 }
+
+void DependencyGraph::PrintMap(){
+  for(map<string, vector<string> >::iterator it = key_to_dependents.begin(); it != key_to_dependents.end(); it++){
+      vector<string> d = it->second;
+      for(vector<string>::iterator it2 = d.begin(); it2 != d.end(); it2++)
+	cout << "Dependees " << it->first << " Dependents " << *it2 << endl; 
+  }
+
+}
+

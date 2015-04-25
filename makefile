@@ -16,6 +16,8 @@ dependency.o: DependencyGraph.cpp DependencyGraph.h
 	g++ -c DependencyGraph.cpp
 
 run:
+	make all
 	./a.out 2118
+
 clean:
 	rm -f ./a.out *.o

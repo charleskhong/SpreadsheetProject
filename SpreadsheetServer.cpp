@@ -161,31 +161,9 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
     {
       // If the spreadsheet is in the list
       if (strcmp(open_spreadsheets.at(i)->filename, file) == 0)
-      //if (strcmp(open_spreadsheets.at(i).filename, file) == 0)
 	{
 	  exists = true;
 	  s = open_spreadsheets.at(i);
-
-	  /*
-	  s->sockets.push_back(client_socket);
-	  // Add this socket to the spreadsheet
-	  //open_spreadsheets.at(i).sockets.push_back(client_socket);
-
-	  numcells = s->cells.size();
-	  // Send the connect command with number of cells in spreadsheet
-	  //numcells = open_spreadsheets.at(i).cells.size();
-	  sendConnected(client_socket, numcells);
-
-	  for (map<string, string>::iterator it = s->cells.begin(); it != s->cells.end(); it++)
-	  // Send all non-empty cells and their contents to the client
-	  //for (map<string, string>::iterator it = open_spreadsheets.at(i).cells.begin(); it != open_spreadsheets.at(i).cells.end(); it++)
-	    {
-	      string cell = it->first;
-	      string content = it->second;
-	      
-	      sendCell(client_socket, cell, content);
-	      }
-	  */
 	  break;
 	}
     }
@@ -195,47 +173,20 @@ void SpreadsheetServer::openSpreadsheet(int client_socket, std::string filename)
     {      
       // Add to active spreadsheets
       open_spreadsheets.push_back(new Spreadsheet(file));
-      //open_spreadsheets.push_back(Spreadsheet(file));
       int back = open_spreadsheets.size()-1;
-
       s = open_spreadsheets.at(back);
-      /*
-      s->sockets.push_back(client_socket);
-      // Add this socket to the spreadsheet
-      //open_spreadsheets.at(back).sockets.push_back(client_socket);
-
-      numcells = s->cells.size();
-      // Send the connect command with number of cells in spreadsheet
-      //numcells = open_spreadsheets.at(back).cells.size();
-      sendConnected(client_socket, numcells);
-
-      for (map<string, string>::iterator it = s->cells.begin(); it != s->cells.end(); it++)
-      // Send all non-empty cells and their contents to the client
-      //for (map<string, string>::iterator it = open_spreadsheets.at(back).cells.begin(); it != open_spreadsheets.at(back).cells.end(); it++)
-	{
-	  string cell = it->first;
-	  string content = it->second;
-	  
-	  sendCell(client_socket, cell, content);
-	}
-      */
     }
   spreadsheets_lock.unlock();
 
  
   s->lock.lock();
   s->sockets.push_back(client_socket);
-  // Add this socket to the spreadsheet
-  //open_spreadsheets.at(i).sockets.push_back(client_socket);
 
   numcells = s->cells.size();
-  // Send the connect command with number of cells in spreadsheet
-  //numcells = open_spreadsheets.at(i).cells.size();
+
   sendConnected(client_socket, numcells);
 
   for (map<string, string>::iterator it = s->cells.begin(); it != s->cells.end(); it++)
-    // Send all non-empty cells and their contents to the client
-    //for (map<string, string>::iterator it = open_spreadsheets.at(i).cells.begin(); it != open_spreadsheets.at(i).cells.end(); it++)
     {
       string cell = it->first;
       string content = it->second;
@@ -281,7 +232,6 @@ void SpreadsheetServer::messageReceived(int client_socket)
     {
        cout << "client disconnected" << endl;
 
-       /** what if they have not connected to a spreadsheet  **/
        // Remove connection of clent and their spreadsheet
        connections_lock.lock();
        const char * filename = sprd_connections.find(client_socket)->second;
@@ -294,9 +244,7 @@ void SpreadsheetServer::messageReceived(int client_socket)
 	 {
 	   // Compare by filename
 	   if (strcmp(open_spreadsheets.at(i)->filename, filename) == 0)
-	   //if (strcmp(open_spreadsheets.at(i).filename, filename) == 0)
 	     {
-
 	       Spreadsheet * s = open_spreadsheets.at(i);
 	       s->sockets.erase(find(s->sockets.begin(), s->sockets.end(), client_socket));
 	       if (s->sockets.size() == 0)
@@ -304,13 +252,6 @@ void SpreadsheetServer::messageReceived(int client_socket)
 	         delete s;
 	         open_spreadsheets.erase(open_spreadsheets.begin()+i);
 	       }
-	       // Erase the socket
-	       //open_spreadsheets.at(i).sockets.erase(find(open_spreadsheets.at(i).sockets.begin(), open_spreadsheets.at(i).sockets.end(), client_socket));
-	       // If there are no more sockets associated with this spreadsheet it is no longer open/active
-	       //if(open_spreadsheets.at(i).sockets.size() == 0)
-	       // {
-	       //  open_spreadsheets.erase(open_spreadsheets.begin()+i);
-	       // }
 	     }
 	 }
        spreadsheets_lock.unlock();
@@ -321,12 +262,10 @@ void SpreadsheetServer::messageReceived(int client_socket)
   // Split by whitespace
   std::stringstream ss(line);
   std::string token;
+
   while (ss >> token)
     tokens.push_back(token);
   
-  // Delimits by space rather than whitespace
-  /*while (getline(ss, token, ' '))
-    tokens.push_back(token);*/
 
   std::string command;
 
@@ -529,30 +468,8 @@ void SpreadsheetServer::cellReceived(int client_socket, std::vector<std::string>
   for (int i = 0; i < open_spreadsheets.size(); i++)
     {
       if (strcmp(filename, open_spreadsheets.at(i)->filename) == 0)
-	//if (strcmp(filename, open_spreadsheets.at(i).filename) == 0)
 	{
-	  s = open_spreadsheets.at(i);
-
-	  /*
-	  bool c = s->setCell(cell, contents);
-	  // Set contents of cell
-	  //bool c = open_spreadsheets.at(i).setCell(cell, contents);
-
-	  // Successfully changed contents
-	  if (c)
-	    {	
-	      vector<int> sockets = s->sockets;     
-	      // Send change to every socket associated with client
-	      //vector<int> sockets = open_spreadsheets.at(i).sockets;
-
-	      for(int i = 0; i < sockets.size(); i++)
-		{
-		  sendCell(sockets.at(i), cell, contents);
-		}    
-	    }
-	  else
-	    sendError(client_socket, 1, "Circular dependency occurs with this change");
-	  */
+	  s = open_spreadsheets.at(i);	 
 	  break;
 	}
     }
@@ -560,16 +477,12 @@ void SpreadsheetServer::cellReceived(int client_socket, std::vector<std::string>
 
   s->lock.lock();
   bool not_cir = s->setCell(cell, contents);
-  // Set contents of cell
-  //bool c = open_spreadsheets.at(i).setCell(cell, contents);
+
 
   // Successfully changed contents
   if (not_cir)
     {	
-      vector<int> sockets = s->sockets;     
-      // Send change to every socket associated with client
-      //vector<int> sockets = open_spreadsheets.at(i).sockets;
-
+      vector<int> sockets = s->sockets;          
       for(int i = 0; i < sockets.size(); i++)
 	{
 	  sendCell(sockets.at(i), cell, contents);
@@ -612,29 +525,8 @@ void SpreadsheetServer::undoReceived(int client_socket, std::vector<std::string>
   for (int i = 0; i < open_spreadsheets.size(); i++)
     {
       if (strcmp(filename, open_spreadsheets.at(i)->filename) == 0)
-	// if (strcmp(filename, open_spreadsheets.at(i).filename) == 0)
 	{
-	  s = open_spreadsheets.at(i);
-
-	  /*
-	  std::pair<std::string, std::string> change;
-	  change = s->undo();
-	  //change = open_spreadsheets.at(i).undo();
-
-	  string name, contents;
-	  name = change.first;
-	  contents = change.second;
-
-	  if (name.compare("ERROR") != 0)
-	    {
-	      vector<int> sockets = s->sockets;
-	      //vector<int> sockets = open_spreadsheets.at(i).sockets;
-	      for (int i = 0; i < sockets.size(); i++)
-		sendCell(sockets.at(i), name, contents);
-	    }
-	  else
-	    sendError(client_socket, 3, "Cannot undo before a change has been made");
-	  */
+	  s = open_spreadsheets.at(i);	 
 	  break;	
 	}
     }
@@ -643,7 +535,6 @@ void SpreadsheetServer::undoReceived(int client_socket, std::vector<std::string>
   s->lock.lock();
   std::pair<std::string, std::string> change;
   change = s->undo();
-  //change = open_spreadsheets.at(i).undo();
 
   string name, contents;
   name = change.first;
@@ -652,7 +543,6 @@ void SpreadsheetServer::undoReceived(int client_socket, std::vector<std::string>
   if (name.compare("ERROR") != 0)
     {
       vector<int> sockets = s->sockets;
-      //vector<int> sockets = open_spreadsheets.at(i).sockets;
       for (int i = 0; i < sockets.size(); i++)
 	sendCell(sockets.at(i), name, contents);
     }
