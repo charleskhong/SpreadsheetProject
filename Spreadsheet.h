@@ -20,25 +20,23 @@
 class Spreadsheet
 {
  public:
-  Spreadsheet();
-  Spreadsheet(const Spreadsheet &other);
-  Spreadsheet(const char* fname);
+  Spreadsheet(); // Default constructor
+  Spreadsheet(const char* fname); // Constructs spreadsheet with given filename
  
-  bool setCell(std::string name, std::string contents);
-  std::pair<std::string, std::string> undo();
+  bool setCell(std::string name, std::string contents); // Set the contents of a cell
+  std::pair<std::string, std::string> undo(); //
   bool saveFile();
 
+  std::mutex lock;
 
   const char* filename;
   std::vector<int> sockets;
-  // Cell name, cell contents
   std::map<std::string, std::string> cells;
   std::vector<std::pair<std::string, std::string> > undo_stack;
 
-  // private:
+ private:
   DependencyGraph graph;
   int circular;
-  std::mutex lock;
   std::set<std::string> getCellsToRecalculate(std::set<std::string> names);
   std::set<std::string> getCellsToRecalculate(std::string name);
   void visit(std::string start, std::string name, std::set<std::string> visited,  std::set<std::string> changed);

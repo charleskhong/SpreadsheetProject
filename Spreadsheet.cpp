@@ -14,18 +14,13 @@
 using namespace boost;
 using namespace std;
 
+/*
+ * Default constructor
+ */
 Spreadsheet::Spreadsheet()
 {
 }
 
-Spreadsheet::Spreadsheet(const Spreadsheet &other)
-{
-  filename = other.filename;
-  sockets = other.sockets;
-  graph = other.graph;
-  cells = other.cells;
-  undo_stack = other.undo_stack;
-}
 
 /*
 * Reads from file provided. Loads the given spreadsheet if it exists. 
@@ -80,14 +75,11 @@ Spreadsheet::Spreadsheet(const char* fname)
 
 bool Spreadsheet::setCell(std::string name, std::string contents)
 {
-  lock.lock();
-
   // If the contents aren't being changed
   try
     {
       if(cells.at(name).compare(contents) == 0)	
 	{
-	  lock.unlock();
 	  return true;	
 	}
     } 
@@ -151,7 +143,6 @@ bool Spreadsheet::setCell(std::string name, std::string contents)
 	      // Undo the changes in the dependency graph
 	      cout << "Circular dependency!" << endl;
 	      graph.ReplaceDependees(name, dependees_backup);
-	      lock.unlock();
 	      return false;
 	    }
 	}
@@ -191,18 +182,15 @@ bool Spreadsheet::setCell(std::string name, std::string contents)
 
   // Change has been made, save the file
   saveFile();
-  lock.unlock();
   return true;
 }
 
 std::pair<std::string, std::string> Spreadsheet::undo()
 {
-  lock.lock();
 
   // Undo stack is empty
   if (undo_stack.size() == 0)
     {
-      lock.unlock();
       return std::pair<std::string, std::string>("ERROR", "ERROR");
     }
   else
@@ -233,7 +221,6 @@ std::pair<std::string, std::string> Spreadsheet::undo()
 
       // Changes were made save the file
       saveFile();
-      lock.unlock();
       return undo;
     }
 
