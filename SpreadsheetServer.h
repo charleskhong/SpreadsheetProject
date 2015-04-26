@@ -27,25 +27,19 @@
 class SpreadsheetServer
 {
  public:
-  SpreadsheetServer();
-  SpreadsheetServer(int port);
-  ~SpreadsheetServer();
+  SpreadsheetServer(); // Default constructor
+  SpreadsheetServer(int port); // Builds the server with specified port
+  ~SpreadsheetServer(); // Destructor
 
-  void start();
+  void start(); // Initializes the server and begins listening for connections
 
-  // <Key, value>: <Socket, Spreadsheet>
-  std::map<int, const char*> sprd_connections;
+  std::map<int, const char*> sprd_connections; // Maps client to a filename of a spreadsheet
+  std::vector<Spreadsheet*> open_spreadsheets; // List of all active/open spreadsheets
+  std::set<std::string> registered_users; // List of all users registered on the server
 
 
-  std::vector<Spreadsheet*> open_spreadsheets;
-
-  // Registered users
-  std::set<std::string> registered_users;
-
-  int port;
 
  private:
-
 
   void messageReceived(int client_socket); // This is used to determine what message is sent
   void connectReceived(int client_socket, std::vector<std::string> tokens); // When a connect message is sent this handles that
@@ -54,16 +48,16 @@ class SpreadsheetServer
   void undoReceived(int client_socket, std::vector<std::string> tokens); // Handles undo messages
   void openSpreadsheet(int client_socket, std::string filename); // helper method used to open a spreadsheet
 
-  bool save_users(); 
-  bool load_users();
+  void sendConnected(int client_socket, int numcells); // Sends connect message to client
+  void sendError(int client_socket, int error_num, std::string info); // Sends error message to client
+  void sendCell(int client_socket, std::string cell_name, std::string contents); // Sends cell message to client
 
-  void sendConnected(int client_socket, int numcells);
-  void sendError(int client_socket, int error_num, std::string info);
-  void sendCell(int client_socket, std::string cell_name, std::string contents);
+  bool save_users(); // Update username file
+  bool load_users(); // Load registered usernames from file
 
-  int server_socket;
-  struct sockaddr_in server_addr;
-  std::mutex connections_lock, spreadsheets_lock, users_lock;
+  int server_socket; // TCP socket for server
+  struct sockaddr_in server_addr; // Address and port for server socket
+  std::mutex connections_lock, spreadsheets_lock, users_lock; // Locks for data structures
 
 };
 
