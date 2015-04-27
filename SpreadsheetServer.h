@@ -32,7 +32,7 @@ class SpreadsheetServer
   ~SpreadsheetServer(); // Destructor
 
   void start(); // Initializes the server and begins listening for connections
-  void shutdown(int server_socket); 
+  void shutdown(int server_socket); // Shuts the server down and frees the port it was bound to.
 
   std::map<int, const char*> sprd_connections; // Maps client to a filename of a spreadsheet
   std::vector<Spreadsheet*> open_spreadsheets; // List of all active/open spreadsheets

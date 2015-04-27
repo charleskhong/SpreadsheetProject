@@ -91,6 +91,7 @@ void SpreadsheetServer::start()
 
   cout << "Server listening" << endl;
 
+  // Call shutdown code on a separate thread
   std::thread (&SpreadsheetServer::shutdown, this, server_socket).detach();
 
   // Accepts connections from clients and send their execution on separate threads
@@ -108,6 +109,10 @@ void SpreadsheetServer::start()
   close(server_socket);
 }
 
+/*
+ * This method is called on a separate thread
+ * and allows for the server to free up the port before exiting.
+ */
 void SpreadsheetServer::shutdown(int server_socket)
 {
   std::string input;
