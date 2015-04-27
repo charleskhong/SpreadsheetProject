@@ -25,16 +25,17 @@ class DependencyGraph {
   DependencyGraph(const DependencyGraph &other); // Copy constructor
   ~DependencyGraph();
 
- int size();
- std::vector<std::string> GetDependents(std::string s);
- std::vector<std::string> GetDependees(std::string s);
+ 
+  int size(); //Returns how many pairs are in the Dependency Graph
+  std::vector<std::string> GetDependents(std::string s);//  Returns vector of dependents of 's'
+  std::vector<std::string> GetDependees(std::string s);//   Returns vecto of dependees of 't'
  bool HasDependents(std::string s);
  bool HasDependees(std::string s);
- void AddDependency(std::string s, std::string t);
- void RemoveDependency(std::string s, std::string t);
- void ReplaceDependents(std::string s, std::vector<std::string> newDependents);
- void ReplaceDependees(std::string s, std::vector<std::string> newDependees);
- void PrintMap();
+ void AddDependency(std::string s, std::string t);//   Adds the Dependency as (dependee, dependent)
+ void RemoveDependency(std::string s, std::string t);//   Removes Dependency for (Dependee, Dependent)
+ void ReplaceDependents(std::string s, std::vector<std::string> newDependents);//   Replaces dependents of 's' witht the newDenpendents vector provided
+ void ReplaceDependees(std::string s, std::vector<std::string> newDependees);// Replaces dependees of 's' witht the newDenpendees vector provided
+ void PrintMap(); // Debigging method to print dependencies.
 
  private:
   int PairCount;

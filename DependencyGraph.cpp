@@ -17,9 +17,13 @@
 
 using namespace std;
 
+/*
+* Constructor
+*/
 DependencyGraph::DependencyGraph(){
   PairCount = 0;
 }
+
 /* Returns how many pairs are in the Dependency Grap
  */
 int DependencyGraph::size(){
@@ -35,18 +39,27 @@ DependencyGraph::~DependencyGraph(){
 }
 
 
+/*
+ * Checks if the Graph has 's' has any dependents
+ */
 bool DependencyGraph::HasDependents(string s){
   if(key_to_dependents.count(s) == 1) // Only one element can exist in this map
     return true;
   return false;
 }
 
+/*
+ * Checks if the Graph has 's' has any dependees
+ */
 bool  DependencyGraph::HasDependees(string s){
   if(key_to_dependees.count(s) == 1) // Only one element can exist in this map
     return true;
   return false;
 }
 
+/*
+ * Returns vector of dependents of 's'
+ */
 vector<string> DependencyGraph::GetDependents(string s){
   if(key_to_dependents.count(s) == 1) {
     vector<string> items = key_to_dependents[s];
@@ -57,6 +70,9 @@ vector<string> DependencyGraph::GetDependents(string s){
   }
 }
 
+/*
+ * Returns vecto of dependees of 't'
+ */
 
 vector<string> DependencyGraph::GetDependees(string t){
   if(key_to_dependees.count(t) == 1) {
@@ -70,24 +86,32 @@ vector<string> DependencyGraph::GetDependees(string t){
 
 
 
+/*
+ * Adds the Dependency as (dependee, dependent)
+ */
 void DependencyGraph::AddDependency(string s, string t){
 
   if(key_to_dependents.count(s) == 1) { // This ensures only 1 unique is entered into the graph
+    //if dependent exists
     if(find(key_to_dependents[s].begin(), key_to_dependents[s].end(), t) == key_to_dependents[s].end()){
       key_to_dependents[s].push_back(t);    
     }
   } else {
+    //if dependent doesn't exist, create a new vector with it and add it to the graph
     vector<string> newDependents;
     newDependents.push_back(t);
     key_to_dependents[s] = newDependents;
   }
   
+  //dependees
  if(key_to_dependees.count(t) == 1) { // This ensures only 1 unique is entered into the graph
+      //if dependee exists
    if(find(key_to_dependees[t].begin(), key_to_dependees[t].end(), s) == key_to_dependees[t].end()){ // Only insert into the vector if it does not already exist
       key_to_dependees[t].push_back(s);
       PairCount++;
     }
   } else {
+    //if dependee doesn't exist, create a new vector with it and add it to the graph
     vector<string> newDependees;
     newDependees.push_back(s);
     key_to_dependees[t] = newDependees;
@@ -97,9 +121,13 @@ void DependencyGraph::AddDependency(string s, string t){
 }
 
 
+/*
+ * Removes Dependency for (Dependee, Dependent)
+ */
 void DependencyGraph::RemoveDependency(string s, string t){
   bool remove = false;
   if(key_to_dependents.count(s) == 1 ){
+    //if exists
     if(find(key_to_dependents[s].begin(), key_to_dependents[s].end(), t) != key_to_dependents[s].end()){
       remove = true;
       if(key_to_dependents[s].size() == 1){ // Either completely remove dependency or party remove it
@@ -119,6 +147,10 @@ void DependencyGraph::RemoveDependency(string s, string t){
   
 }
 
+
+/*
+ * Replaces dependents of 's' witht the newDenpendents vector provided
+ */
 void DependencyGraph::ReplaceDependents(string s, vector<string> newDependents){
   if(key_to_dependents.count(s) == 1) {
     for (vector<string>::iterator it = key_to_dependents[s].begin(); it != key_to_dependents[s].end(); ++it)
@@ -132,6 +164,9 @@ void DependencyGraph::ReplaceDependents(string s, vector<string> newDependents){
  
 }
 
+/*
+ * Replaces dependees of 's' witht the newDenpendees vector provided
+ */
 void DependencyGraph::ReplaceDependees(string s, vector<string> newDependees) {
   if(key_to_dependees.count(s) == 1) {
     for (int i = key_to_dependees[s].size() - 1; i >= 0; i--)
@@ -144,6 +179,9 @@ void DependencyGraph::ReplaceDependees(string s, vector<string> newDependees) {
   }
 }
 
+/*
+ * Debigging method to print dependencies.
+ */
 void DependencyGraph::PrintMap(){
   for(map<string, vector<string> >::iterator it = key_to_dependents.begin(); it != key_to_dependents.end(); it++){
       vector<string> d = it->second;
