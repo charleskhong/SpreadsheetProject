@@ -91,6 +91,8 @@ void SpreadsheetServer::start()
 
   cout << "Server listening" << endl;
 
+  std::thread (&SpreadsheetServer::shutdown, this, server_socket).detach();
+
   // Accepts connections from clients and send their execution on separate threads
   while (1)
     {
@@ -104,6 +106,20 @@ void SpreadsheetServer::start()
 
   // Close the server socket
   close(server_socket);
+}
+
+void SpreadsheetServer::shutdown(int server_socket)
+{
+  std::string input;
+  cin >> input;
+  if (input.compare("QUIT") == 0)
+    {
+      close(server_socket);
+      cout << "Server shutting down" << endl;
+      exit(0);
+    }
+  else
+    shutdown(server_socket);
 }
 
 /* 
